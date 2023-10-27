@@ -34,7 +34,7 @@ To run this project, you need to have **Python 3.x** and the following Python li
 - python-dotenv
 - sentence_transformers
 
-You also need to obtain an API key from OpenAI and set it as an environment variable. Make sure to replace `'YOUR_API_KEY'` with your actual API key.
+You also need to obtain an API key from OpenAI and set it as an environment variable. Make sure to replace `'OPENAI_API_KEY'` with your actual API key.
 
 ### Installing
 
