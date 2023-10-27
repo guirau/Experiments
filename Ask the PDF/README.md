@@ -38,17 +38,9 @@ You also need to obtain an API key from OpenAI and set it as an environment vari
 
 ### Installing
 
-1. Clone the repository to your local machine:
+1. Clone the repository to your local machine.
 
-```bash
-git clone https://github.com/your-username/ask-the-pdf.git
-```
-
-2. Install the required Python libraries using `pip`:
-
-```bash
-pip install -r requirements.txt
-```
+2. Install the required Python libraries using `pip`.
 
 3. Set your OpenAI API key as an environment variable or provide it inside the Streamlit app.
 
