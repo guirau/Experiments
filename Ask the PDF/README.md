@@ -1,72 +1,74 @@
 # Ask the PDF
-## Project: Flower Image Classifier
 
 Inside this directory you will find one Jupyter notebook:
 
-- **notebook.ipynb**: Complete project from the Udacity ML with TensorFlow course.
+- **notebook.ipynb**: A Jupyter notebook containing the complete project documentation, code, and instructions. It guides you through the process of utilizing LangChain and the OpenAI API to answer questions based on the content of a PDF document. The notebook covers library installations, PDF reading, text splitting, embeddings generation, and how to interact with the OpenAI model.
 
-And two Python scripts:
+And one Python script:
 
-- **predict.py**: Command-line app that uses a pre-trained network to predict the top flower names from an image along with their corresponding probabilities.
-- **utility.py**: Supporting modules for `predict.py`.
+- **app.py**: A Python script that serves as a Streamlit web application. It allows users to upload a PDF document, input their questions, and obtain answers based on the content of the PDF. The script leverages the knowledge base created from the PDF and the ChatGPT model from OpenAI to provide responses to user queries.
 
-### Rendered HTML view from nbviewer
+## Introduction
 
-- **image_classifier.ipynb**: [https://nbviewer.org/github/guirau/Udacity/blob/main/ML%20with%20TensorFlow/Flower%20Image%20Classifier/Project_Image_Classifier_Project.ipynb](https://nbviewer.org/github/guirau/Udacity/blob/main/ML%20with%20TensorFlow/Flower%20Image%20Classifier/Project_Image_Classifier_Project.ipynb)
+Ask the PDF is a Python project that allows you to extract information from a PDF document by asking questions. It leverages LangChain and the OpenAI API to provide answers based on the content of the PDF. This application can help you quickly find specific information within a large document without having to manually search for it.
 
----
+**Key Features:**
 
-### Install
+- Extract text from a PDF document.
+- Split the document into smaller chunks for efficient processing.
+- Generate embeddings for the document chunks.
+- Ask questions related to the document's content and receive answers.
 
-This project requires **Python 3.x** and the following Python libraries installed:
+## Getting Started
 
-- [NumPy](http://www.numpy.org/)
-- [Matplotlib](http://matplotlib.org/)
-- [TensorFlow](https://www.tensorflow.org/)
-- [TensorFlow Hub](https://tfhub.dev/)
-- [TensorFlow Datasets](https://www.tensorflow.org/datasets)
-- [Pillow (PIL Fork)](https://pillow.readthedocs.io/en/stable/)
+These instructions will help you set up and run the project on your local machine.
 
-You will also need to have software installed to run and execute an [iPython Notebook](http://ipython.org/notebook.html)
+### Prerequisites
 
-### Run
+To run this project, you need to have **Python 3.x** and the following Python libraries installed:
 
-In a terminal or command window, navigate to the top-level project directory `image_classifier/` (that contains this README) and run one of the following commands:
+- PyPDF2
+- LangChain
+- faiss-cpu
+- openai
+- python-dotenv
+- sentence_transformers
+
+You also need to obtain an API key from OpenAI and set it as an environment variable. Make sure to replace `'YOUR_API_KEY'` with your actual API key.
+
+### Installing
+
+1. Clone the repository to your local machine:
 
 ```bash
-ipython notebook image_classifier.ipynb
-```  
-or
-```bash
-jupyter notebook image_classifier.ipynb
+git clone https://github.com/your-username/ask-the-pdf.git
 ```
 
-This will open the iPython Notebook software and project file in your browser.
-
-### Code
-
-The `predict.py` module should predict the top flower names from an image along with their corresponding probabilities.
-
-**Basic usage**:
+2. Install the required Python libraries using `pip`:
 
 ```bash
-python predict.py /path/to/image saved_model
+pip install -r requirements.txt
 ```
 
-**Options**:
+3. Set your OpenAI API key as an environment variable or provide it inside the Streamlit app.
 
-- `--top_k` or `-k`: Return the top K most likely classes:
+### Usage
+
+1. Run the application with Streamlit:
 
 ```bash
-python predict.py /path/to/image saved_model --top_k K
+streamlit run app.py
 ```
 
-- `--category_names` or `-c`: Path to a JSON file mapping labels to flower names:
+2. Enter your OpenAI API key and upload a PDF document.
+3. Ask a question related to the content of the PDF.
+4. The application will provide you with an answer based on the document's content.
 
-```bash
-python predict.py /path/to/image saved_model --category_names map.json
-```
+## Built With
 
-- `--verbose` or `-v`: Show verbose information.
-
-### App
+- [PyPDF2](https://pythonhosted.org/PyPDF2/) - Python library for PDF document manipulation.
+- [LangChain](https://www.langchain.com/) - Language processing toolkit.
+- [faiss-cpu](https://github.com/facebookresearch/faiss) - A library for efficient similarity search and clustering of dense vectors.
+- [OpenAI](https://openai.com/) - For question answering using the GPT-3.5 model.
+- [Streamlit](https://streamlit.io/) - For creating the web application interface.
+- [Sentence Transformers](https://www.sbert.net/) - Library for generating embeddings for text.
