@@ -1,5 +1,7 @@
 # Ask the PDF
 
+- **Demo**: [https://guirau-askthepdf.streamlit.app/](https://guirau-askthepdf.streamlit.app/)
+
 Inside this directory you will find one Jupyter notebook:
 
 - **notebook.ipynb**: A Jupyter notebook containing the complete project documentation, code, and instructions. It guides you through the process of utilizing LangChain and the OpenAI API to answer questions based on the content of a PDF document. The notebook covers library installations, PDF reading, text splitting, embeddings generation, and how to interact with the OpenAI model.
