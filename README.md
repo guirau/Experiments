@@ -1,1 +1,3 @@
-# Small-Projects
+# Small Projects
+
+A collection of small coding projects and experiments that don't fit into larger repositories.
