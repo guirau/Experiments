@@ -28,8 +28,8 @@ This repository provides an overview of key PyTorch components, from foundationa
 - [Section 8: Transfer Learning in PyTorch](./docs/Section_8_Transfer_Learning.md)  
   Use pre-trained models to speed up training and improve performance with transfer learning techniques.
 
-- [Section 9: Saving and Loading Models in PyTorch](./docs/Section_9_Saving_Loading_Models.md)  
+- [Section 9: Saving and Loading Models in PyTorch](./docs/Section_9_Saving_and_Loading_Models.md)  
   Save and load model weights, entire models, and optimizer states to manage model checkpoints and reuse trained models.
 
-- [Section 10: Deploying PyTorch Models](./docs/Section_10_Deployment/)  
+- [Section 10: Deploying PyTorch Models](./docs/Section_10_Deployments.md)  
 Deploy PyTorch models using web APIs like Flask and FastAPI for real-time inference, or TorchServe for scalable, production-ready model deployment.
