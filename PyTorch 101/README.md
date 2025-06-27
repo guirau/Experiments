@@ -1,6 +1,6 @@
 # PyTorch Guide
 
-Welcome to my PyTorch Guide! This repository provides an overview of key PyTorch components, from foundational concepts like tensors to deployment strategies. Have fun!
+This repository provides an overview of key PyTorch components, from foundational concepts like tensors to deployment strategies.
 
 ## Table of Contents
 
