@@ -44,17 +44,17 @@ python -m src.main
 
 Copy `.env.example` to `.env` and fill in:
 
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Claude API key |
-| `TELEGRAM_BOT_TOKEN` | From @BotFather |
-| `TELEGRAM_ADMIN_CHAT_ID` | Shelter admin's Telegram chat ID |
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_KEY` | Supabase service role key |
-| `SUPABASE_STORAGE_BUCKET` | Storage bucket name (default: `dog-photos`) |
-| `GOOGLE_CALENDAR_ID` | Shelter's Google Calendar ID |
-| `GOFUNDME_LINK` | One-time donation link |
-| `RECURRING_DONATION_LINK` | Monthly donation link |
+| Variable                    | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `ANTHROPIC_API_KEY`       | Claude API key                               |
+| `TELEGRAM_BOT_TOKEN`      | From @BotFather                              |
+| `TELEGRAM_ADMIN_CHAT_ID`  | Shelter admin's Telegram chat ID             |
+| `SUPABASE_URL`            | Your Supabase project URL                    |
+| `SUPABASE_KEY`            | Supabase service role key                    |
+| `SUPABASE_STORAGE_BUCKET` | Storage bucket name (default:`dog-photos`) |
+| `GOOGLE_CALENDAR_ID`      | Shelter's Google Calendar ID                 |
+| `GOFUNDME_LINK`           | One-time donation link                       |
+| `RECURRING_DONATION_LINK` | Monthly donation link                        |
 
 ## How It Works
 
@@ -85,3 +85,11 @@ Copy `.env.example` to `.env` and fill in:
 ## License
 
 MIT
+
+## Next steps:
+
+- Dog status database: With regular updates about the dogs, photos/videos, health status, and overall how donations are contributing to the dog's wellbeing
+- Agent (conversational): For the owner to explain the dog's status and automatically fill in the details in the database, no need to fill them in manually
+- App (with admin-panel) where all the information of the each dog + their current status is posted + pictures/videos + general information on how to take care of this dog.
+  * The app could be a great way to improve adoptions
+  * The admin-panel of the app could be a great way for the shelter owner to update info of every dog, without having to type (all done by agents)
