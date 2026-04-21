@@ -27,8 +27,8 @@
 
 ### API
 
-- [ ] **API-01**: `GET /api/dogs` returns `{ dogs: [{ id: UUID, name: string }] }` from Supabase
-- [ ] **API-02**: `GET /api/dogs/{id}` returns the full dog object (all fields in §4 of PRD)
+- [x] **API-01**: `GET /api/dogs` returns `{ dogs: [{ id: UUID, name: string }] }` from Supabase
+- [x] **API-02**: `GET /api/dogs/{id}` returns the full dog object (all fields in §4 of PRD)
 - [x] **API-03**: FastAPI connects to Supabase via `supabase-py` using env vars
 
 ### Infrastructure
@@ -76,8 +76,8 @@
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-03 | Phase 1 | Complete |
 | INFRA-04 | Phase 1 | Complete |
-| API-01 | Phase 1 | Pending |
-| API-02 | Phase 1 | Pending |
+| API-01 | Phase 1 | Complete |
+| API-02 | Phase 1 | Complete |
 | API-03 | Phase 1 | Complete |
 | INFRA-02 | Phase 2 | Pending |
 | AUTH-01 | Phase 2 | Pending |

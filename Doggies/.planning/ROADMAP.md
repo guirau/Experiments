@@ -15,7 +15,7 @@ the full end-to-end flow.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Backend Foundation** - FastAPI scaffold + Supabase connection + both API endpoints working
+- [x] **Phase 1: Backend Foundation** - FastAPI scaffold + Supabase connection + both API endpoints working (completed 2026-04-21)
 - [ ] **Phase 2: Frontend Auth + Dog List** - Next.js scaffold + login screen + dog list screen
 - [ ] **Phase 3: Dog Detail + Integration** - Detail screen + photos handling + back navigation + end-to-end flow
 
@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Backend scaffold: dirs, requirements.txt, config.py, database.py, .env, README
-- [ ] 01-02-PLAN.md — API endpoints: routers/dogs.py + main.py with CORS
+- [x] 01-02-PLAN.md — API endpoints: routers/dogs.py + main.py with CORS
 
 **Success Criteria** (what must be TRUE):
   1. Running `uvicorn main:app` starts the FastAPI server on port 8000 with no errors
@@ -70,6 +70,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Foundation | 1/2 | In Progress|  |
+| 1. Backend Foundation | 2/2 | Complete   | 2026-04-21 |
 | 2. Frontend Auth + Dog List | 0/TBD | Not started | - |
 | 3. Dog Detail + Integration | 0/TBD | Not started | - |
