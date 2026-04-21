@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Doggies API", version="1.0.0")
 
 # CORS — allow requests from the Next.js dev server (Phase 2)
-# Also allow all origins for local development convenience
+# extend with prod URL in Phase 3
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=False,
     allow_methods=["GET"],
     allow_headers=["*"],
