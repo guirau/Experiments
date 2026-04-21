@@ -29,14 +29,14 @@
 
 - [ ] **API-01**: `GET /api/dogs` returns `{ dogs: [{ id: UUID, name: string }] }` from Supabase
 - [ ] **API-02**: `GET /api/dogs/{id}` returns the full dog object (all fields in §4 of PRD)
-- [ ] **API-03**: FastAPI connects to Supabase via `supabase-py` using env vars
+- [x] **API-03**: FastAPI connects to Supabase via `supabase-py` using env vars
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: Monorepo with `v1/frontend/` (Next.js) and `v1/backend/` (FastAPI)
+- [x] **INFRA-01**: Monorepo with `v1/frontend/` (Next.js) and `v1/backend/` (FastAPI)
 - [ ] **INFRA-02**: `v1/frontend/.env.local` exposes `NEXT_PUBLIC_API_URL=http://localhost:8000`
-- [ ] **INFRA-03**: `v1/backend/.env` contains `SUPABASE_URL` and `SUPABASE_ANON_KEY` (shared from v0)
-- [ ] **INFRA-04**: Both services run locally with documented start commands
+- [x] **INFRA-03**: `v1/backend/.env` contains `SUPABASE_URL` and `SUPABASE_ANON_KEY` (shared from v0)
+- [x] **INFRA-04**: Both services run locally with documented start commands
 
 ## v2 Requirements
 
@@ -73,12 +73,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
+| INFRA-04 | Phase 1 | Complete |
 | API-01 | Phase 1 | Pending |
 | API-02 | Phase 1 | Pending |
-| API-03 | Phase 1 | Pending |
+| API-03 | Phase 1 | Complete |
 | INFRA-02 | Phase 2 | Pending |
 | AUTH-01 | Phase 2 | Pending |
 | AUTH-02 | Phase 2 | Pending |
