@@ -41,6 +41,27 @@ Doggies/
 └── CLAUDE.md           # This file
 ```
 
+## Testing — TDD Approach
+
+All phases follow strict Test-Driven Development:
+
+1. **Write tests first** — before any implementation code, create tests that map directly to the phase requirements
+2. **All tests must fail initially** — run the suite and confirm every new test is RED before writing a single line of implementation
+3. **Make tests pass** — implement only enough code to turn tests GREEN; no speculative code
+4. **All tests must pass by phase end** — the phase is not complete until the full suite is green
+
+**Test types:**
+- **Unit tests** — individual functions and classes in isolation (mock external deps like Supabase)
+- **Integration tests** — API endpoints with a real (or test) database connection, where the requirement touches multiple layers
+
+**Placement:**
+- Backend: `v1/backend/tests/` — pytest, use `httpx.AsyncClient` for endpoint tests
+- Frontend: `v1/frontend/__tests__/` — Jest + React Testing Library for components, Playwright for E2E flows
+
+**Test file naming:** mirror the source file — `routers/dogs.py` → `tests/test_dogs.py`
+
+**Traceability:** each test file should reference the requirement ID(s) it covers (e.g. `# Tests: API-01, API-02`) so coverage can be audited against REQUIREMENTS.md.
+
 ## Key Decisions
 
 - FastAPI is used even though Next.js API routes would suffice — preserves `frontend/`+`backend/` monorepo shape for future expansion
