@@ -13,8 +13,8 @@ def _require(name: str) -> str:
 
 
 class Settings:
-    SUPABASE_URL: str = ""
-    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_URL: str
+    SUPABASE_ANON_KEY: str
 
     def __init__(self) -> None:
         self.SUPABASE_URL = _require("SUPABASE_URL")

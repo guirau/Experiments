@@ -1,9 +1,10 @@
 import logging
-from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 from postgrest.exceptions import APIError
 from database import get_supabase_client
+from models import DogDetail, DogListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ DOG_DETAIL_FIELDS = (
 
 
 @router.get("/dogs")
-def list_dogs() -> dict[str, list[dict[str, Any]]]:
+def list_dogs() -> DogListResponse:
     """GET /api/dogs — returns { dogs: [{ id, name }] }"""
     client = get_supabase_client()
     try:
@@ -25,18 +26,18 @@ def list_dogs() -> dict[str, list[dict[str, Any]]]:
     except APIError as exc:
         logger.error("Supabase error in list_dogs: %s", exc)
         raise HTTPException(status_code=503, detail="Database unavailable")
-    return {"dogs": response.data}
+    return DogListResponse(dogs=response.data)
 
 
 @router.get("/dogs/{dog_id}")
-def get_dog(dog_id: str) -> dict[str, Any]:
+def get_dog(dog_id: UUID) -> DogDetail:
     """GET /api/dogs/{id} — returns full dog object or 404"""
     client = get_supabase_client()
     try:
         response = (
             client.table("dogs")
             .select(DOG_DETAIL_FIELDS)
-            .eq("id", dog_id)
+            .eq("id", str(dog_id))
             .execute()
         )
     except APIError as exc:
@@ -44,4 +45,4 @@ def get_dog(dog_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail="Database unavailable")
     if not response.data:
         raise HTTPException(status_code=404, detail=f"Dog {dog_id} not found")
-    return response.data[0]
+    return DogDetail(**response.data[0])
