@@ -25,13 +25,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Goal**: The FastAPI backend is running locally and serving live dog data from Supabase
 **Depends on**: Nothing (first phase)
 **Requirements**: INFRA-01, INFRA-03, INFRA-04, API-01, API-02, API-03
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Backend scaffold: dirs, requirements.txt, config.py, database.py, .env, README
+- [ ] 01-02-PLAN.md — API endpoints: routers/dogs.py + main.py with CORS
+
 **Success Criteria** (what must be TRUE):
   1. Running `uvicorn main:app` starts the FastAPI server on port 8000 with no errors
   2. `GET /api/dogs` returns a JSON object with a `dogs` array containing `{id, name}` entries read from the Supabase `dogs` table
   3. `GET /api/dogs/{id}` returns the full dog object for a valid UUID
   4. The backend reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from `v1/backend/.env` and connects successfully
   5. The `v1/` monorepo structure exists with `frontend/` and `backend/` directories and documented start commands
-**Plans**: TBD
 
 ### Phase 2: Frontend Auth + Dog List
 **Goal**: The admin can open the app in a browser, log in, and see the list of all dogs
@@ -65,6 +70,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Foundation | 0/TBD | Not started | - |
+| 1. Backend Foundation | 0/2 | Not started | - |
 | 2. Frontend Auth + Dog List | 0/TBD | Not started | - |
 | 3. Dog Detail + Integration | 0/TBD | Not started | - |
