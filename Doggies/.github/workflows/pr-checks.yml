@@ -1,0 +1,81 @@
+name: PR Checks — dev → main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ─── Unit & Integration Tests ────────────────────────────────────────────────
+  backend-tests:
+    name: Backend Tests (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v1/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v --cov=. --cov-report=term-missing
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  # ─── E2E Verification (Claude verification-agent via Playwright MCP) ─────────
+  e2e-verification:
+    name: E2E Verification (Claude Agent)
+    runs-on: ubuntu-latest
+    needs: backend-tests   # only runs if unit/integration tests pass
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install backend dependencies
+        run: pip install -r v1/backend/requirements.txt
+
+      - name: Start backend server
+        working-directory: v1/backend
+        run: uvicorn main:app --port 8000 &
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Wait for server to be ready
+        run: |
+          until curl -sf http://localhost:8000/health; do
+            echo "Waiting for backend..."
+            sleep 2
+          done
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install Playwright MCP and browsers
+        run: |
+          npm install -g @playwright/mcp
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E verification agent
+        # Reads .claude/agents/verification-agent.md via the /e2e-verification command.
+        # Requires ANTHROPIC_API_KEY in GitHub Secrets.
+        run: |
+          claude --print \
+            "/e2e-verification http://localhost:8000 — verify: GET /api/dogs returns 200 with dogs array; GET /api/dogs/00000000-0000-0000-0000-000000000000 returns 404; GET /health returns {status:ok}. Exit non-zero on any failure."
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
