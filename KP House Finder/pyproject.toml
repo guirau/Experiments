@@ -1,0 +1,15 @@
+[project]
+name = "kp-house-finder"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Alejandro Guirau",email = "alejandroguirau@gmail.com"}
+]
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "anthropic (>=0.107.0,<0.108.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)"
+]
+
+[tool.poetry]
+package-mode = false

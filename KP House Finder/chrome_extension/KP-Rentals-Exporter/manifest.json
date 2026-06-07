@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "KP Rentals Exporter",
+  "version": "1.0.0",
+  "description": "Exports rental listing posts from Facebook groups and WhatsApp Web group chats to JSON, for the Koh Phangan rental finder. Runs only when you click it, in your own session.",
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "downloads"],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://web.facebook.com/*",
+    "https://m.facebook.com/*",
+    "https://web.whatsapp.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "KP Rentals Exporter",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
