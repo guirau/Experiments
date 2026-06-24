@@ -206,6 +206,27 @@ def test_valid_iso_date_is_kept(monkeypatch):
 # single-row wrapper used by the CSV path + convenience
 # ---------------------------------------------------------------------------
 
+def test_batch_system_prompt_is_cache_controlled(monkeypatch):
+    """The large schema system prompt must be sent as a cache_control block so its
+    tokens are billed once, not on every batch call."""
+    captured = {}
+
+    class FakeMessages:
+        def create(self, **kw):
+            captured.update(kw)
+            block = type("B", (), {"type": "text", "text": "[{}]"})()
+            return type("R", (), {"content": [block]})()
+
+    monkeypatch.setattr(extract, "get_client",
+                        lambda: type("C", (), {"messages": FakeMessages()})())
+
+    extract.call_claude_batch(["a long enough listing text to send here"])
+
+    assert isinstance(captured["system"], list)
+    assert captured["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert "JSON ARRAY" in captured["system"][0]["text"]
+
+
 def test_extract_fields_wrapper_delegates_to_batch(monkeypatch):
     monkeypatch.setattr(extract, "call_claude_batch",
                         lambda texts: [{"is_offer": "offer", "bedrooms": 3}])

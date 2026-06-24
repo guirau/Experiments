@@ -166,6 +166,12 @@ merge, skip, or reorder posts. Each object MUST have EXACTLY these keys (no othe
 {_SCHEMA_RULES}"""
 
 
+def _cached_system(text):
+    """System prompt as a cache_control block: the (large, identical) schema prompt is
+    billed once per ~5-min window instead of on every call."""
+    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+
+
 def _strip_fences(raw):
     return re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
 
@@ -175,7 +181,7 @@ def call_claude(text):
     resp = get_client().messages.create(
         model=MODEL,
         max_tokens=2048,
-        system=SYSTEM_PROMPT,
+        system=_cached_system(SYSTEM_PROMPT),
         messages=[{"role": "user", "content": text}],
     )
     raw = _strip_fences("".join(b.text for b in resp.content if b.type == "text").strip())
@@ -200,7 +206,7 @@ def call_claude_batch(texts):
     resp = get_client().messages.create(
         model=MODEL,
         max_tokens=min(8192, 800 * len(texts) + 512),
-        system=SYSTEM_PROMPT_BATCH,
+        system=_cached_system(SYSTEM_PROMPT_BATCH),
         messages=[{"role": "user", "content": user}],
     )
     raw = _strip_fences("".join(b.text for b in resp.content if b.type == "text").strip())
