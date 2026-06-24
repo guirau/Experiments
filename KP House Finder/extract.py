@@ -87,7 +87,10 @@ null if not mentioned. null means UNKNOWN, which is NOT the same as false.
 CLASSIFICATION
 - discard_reason: set to ONE of these when the post should be excluded, else null:
   - "not_a_listing": not about renting a place to live (bike/scooter/car, job, \
-service, item for sale, pet, event, general chat).
+service, item for sale, pet, event, general chat). Do NOT use not_a_listing merely \
+because a post is short or truncated ("See more" / "…"): if it clearly refers to a \
+dwelling to rent (house/villa/bungalow/apartment/studio/room) keep it (discard_reason \
+null) with parse_confidence "low", even when most details are missing.
   - "wanted": the poster is LOOKING FOR a place, not offering one.
   - "for_sale": the property is being SOLD, not rented (e.g. "for sale", "land for \
 sale", a purchase/asking price to buy, leasehold/freehold sale). We want RENTALS only.
@@ -95,7 +98,9 @@ sale", a purchase/asking price to buy, leasehold/freehold sale). We want RENTALS
   - "not_long_term": clearly ONLY a short-term/holiday rental (nightly/weekly, "per \
 night", holiday let) with no long-term option.
   A valid long-term-capable rental OFFER on Koh Phangan -> null.
-- is_offer: "offer" (offering a place), "wanted" (seeking a place), or "ambiguous".
+- is_offer: "offer" (offering a place), "wanted" (seeking a place), or "ambiguous". \
+A dwelling described as "for rent" / "available" is an "offer" even if the text is \
+truncated; use "ambiguous" only when the intent is genuinely unclear.
 - post_language: "en", "th", "mixed", or "other" (any other language).
 - parse_confidence: "high" if clear and complete, "medium" if partial, "low" if \
 vague/truncated/hard to read.
