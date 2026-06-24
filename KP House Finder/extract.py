@@ -65,6 +65,17 @@ ENUMS = {
 }
 LIST_FIELDS = {"furnishings_list"}
 
+# typed SQL columns -> coerced so PG never rejects a stray LLM value (invalid -> None).
+INT_FIELDS = {"price_thb", "price_low_thb", "price_high_thb", "bedrooms", "bathrooms",
+              "min_stay_months", "deposit_thb", "size_sqm"}
+NUM_FIELDS = {"electricity_rate_thb_per_unit"}
+BOOL_FIELDS = {"multi_listing", "year_round", "subletting_allowed", "water_included",
+               "internet_included", "has_aircon", "has_wifi", "furnished", "has_kitchen",
+               "has_pool", "has_parking", "pet_friendly", "sea_view", "has_workspace",
+               "has_terrace", "near_road"}
+DATE_FIELDS = {"available_until"}   # PG `date`; only ISO YYYY-MM-DD survives, else None
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 _client = None
 
 
@@ -203,9 +214,56 @@ def _empty_fields():
     return {k: None for k in MODEL_FIELDS}
 
 
+def _to_int(v):
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, int):
+        return v
+    if isinstance(v, float):
+        return int(v)
+    m = re.search(r"-?\d[\d,]*", str(v))
+    if not m:
+        return None
+    try:
+        return int(m.group(0).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def _to_num(v):
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return v
+    m = re.search(r"-?\d[\d,]*\.?\d*", str(v))
+    if not m:
+        return None
+    try:
+        return float(m.group(0).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def _to_bool(v):
+    if isinstance(v, bool):
+        return v
+    s = str(v).strip().lower()
+    if s in ("true", "yes"):
+        return True
+    if s in ("false", "no"):
+        return False
+    return None
+
+
+def _to_date(v):
+    s = str(v).strip()
+    return s if _ISO_DATE_RE.match(s) else None
+
+
 def _coerce(fields):
     """Normalize a raw model dict into MODEL_FIELDS: lowercase enums (fallback on
-    invalid), join list fields, keep None as unknown, drop unknown keys."""
+    invalid), coerce typed columns (int/numeric/bool/date; invalid -> None), join list
+    fields, keep None as unknown, drop unknown keys."""
     out = _empty_fields()
     if not isinstance(fields, dict):
         return out
@@ -220,6 +278,14 @@ def _coerce(fields):
             allowed, fallback = ENUMS[k]
             s = str(v).strip().lower()
             out[k] = s if s in allowed else fallback
+        elif k in INT_FIELDS:
+            out[k] = _to_int(v)
+        elif k in NUM_FIELDS:
+            out[k] = _to_num(v)
+        elif k in BOOL_FIELDS:
+            out[k] = _to_bool(v)
+        elif k in DATE_FIELDS:
+            out[k] = _to_date(v)
         else:
             out[k] = v
     return out

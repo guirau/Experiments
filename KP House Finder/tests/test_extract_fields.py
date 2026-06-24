@@ -166,6 +166,43 @@ def test_mixed_short_and_long_only_calls_for_long(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# type coercion: typed SQL columns must never receive a value PG would reject
+# ---------------------------------------------------------------------------
+
+def test_coerces_messy_numbers_and_dates_and_bools(monkeypatch):
+    monkeypatch.setattr(extract, "call_claude_batch", lambda texts: [{
+        "price_thb": "15,000 THB",          # messy int string
+        "bedrooms": "studio",               # not a number -> None
+        "bathrooms": 2.0,                    # float -> int
+        "deposit_thb": 10000,                # already int
+        "electricity_rate_thb_per_unit": "8 per unit",  # numeric from string
+        "available_until": "October",        # invalid date -> None
+        "available_from": "October",         # TEXT field -> kept as-is
+        "year_round": "yes",                 # bool from string
+        "has_pool": "false",                 # bool from string
+        "size_sqm": None,                    # unknown stays None
+    }])
+    [f] = extract.extract_batch(["a long enough listing text to parse here"])
+    assert f["price_thb"] == 15000
+    assert f["bedrooms"] is None
+    assert f["bathrooms"] == 2
+    assert f["deposit_thb"] == 10000
+    assert f["electricity_rate_thb_per_unit"] == 8.0
+    assert f["available_until"] is None          # invalid date dropped
+    assert f["available_from"] == "October"      # text preserved
+    assert f["year_round"] is True
+    assert f["has_pool"] is False
+    assert f["size_sqm"] is None
+
+
+def test_valid_iso_date_is_kept(monkeypatch):
+    monkeypatch.setattr(extract, "call_claude_batch",
+                        lambda texts: [{"available_until": "2026-10-01"}])
+    [f] = extract.extract_batch(["a long enough listing text to parse here"])
+    assert f["available_until"] == "2026-10-01"
+
+
+# ---------------------------------------------------------------------------
 # single-row wrapper used by the CSV path + convenience
 # ---------------------------------------------------------------------------
 
