@@ -4,6 +4,7 @@ import { AREA_ENUM, PROPERTY_TYPES, SEASONS, CONFIDENCES, LANGUAGES } from "@/li
 import { areaName } from "@/lib/areas";
 import { PriceRange } from "./PriceRange";
 import { MultiSelect } from "./MultiSelect";
+import { SingleSelect } from "./SingleSelect";
 import { BoolFilter } from "./BoolFilter";
 import { NumberMax } from "./NumberMax";
 import { AmenityToggles } from "./AmenityToggles";
@@ -24,6 +25,14 @@ export function FilterSidebar({ filters, setFilters, onClear }:
       <Section>Core</Section>
       <MultiSelect label="Listing" options={["rent", "sale"]} selected={filters.listingType}
         onChange={(listingType) => set({ listingType })} render={(o) => (o === "sale" ? "For sale" : "For rent")} />
+      <SingleSelect label="Parsed" value={filters.parsedWithin} onChange={(parsedWithin) => set({ parsedWithin })}
+        options={[
+          { value: "", label: "Any time" },
+          { value: "1", label: "Last 24h" },
+          { value: "3", label: "Last 3 days" },
+          { value: "7", label: "Last 7 days" },
+          { value: "30", label: "Last 30 days" },
+        ]} />
       <PriceRange min={filters.priceMin} max={filters.priceMax} onChange={(priceMin, priceMax) => set({ priceMin, priceMax })} />
       <MultiSelect label="Area" options={AREA_ENUM} selected={filters.areas} onChange={(areas) => set({ areas })} render={areaName} />
       <MultiSelect label="Type" options={PROPERTY_TYPES} selected={filters.propertyTypes} onChange={(propertyTypes) => set({ propertyTypes })} />

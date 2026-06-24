@@ -4,7 +4,7 @@ import type { Listing, FilterState } from "./types";
 
 function L(over: Partial<Listing>): Listing {
   return { id: "x", source_table: null, source: null, listed_at: null, raw_text: null,
-    parser_version: null, discard_reason: null, is_offer: null, post_language: null,
+    parser_version: null, parsed_at: null, discard_reason: null, is_offer: null, post_language: null,
     parse_confidence: null, multi_listing: null, price_thb: null, price_low_thb: null,
     price_high_thb: null, price_period: null, season: null, bedrooms: null, bathrooms: null,
     property_type: null, area_raw: null, area_canonical: null, min_stay_months: null,
@@ -101,6 +101,17 @@ describe("listingType (rent vs sale)", () => {
   });
 });
 
+describe("parsedWithin (recently parsed)", () => {
+  it("keeps listings parsed within N days using the passed clock; empty = any", () => {
+    const now = Date.parse("2026-06-24T12:00:00Z");
+    const recent = new Date(now - 2 * 3600 * 1000).toISOString(); // 2h ago
+    const old = new Date(now - 10 * 86_400_000).toISOString();    // 10 days ago
+    const rows = [L({ parsed_at: recent }), L({ parsed_at: old })];
+    expect(applyFilters(rows, f({ parsedWithin: "7" }), now).map((r) => r.parsed_at)).toEqual([recent]);
+    expect(applyFilters(rows, f({ parsedWithin: "" }), now)).toHaveLength(2);
+  });
+});
+
 describe("countByArea", () => {
   it("groups by area_canonical and maps null -> unknown", () => {
     const rows = [L({ area_canonical: "srithanu" }), L({ area_canonical: "srithanu" }),
@@ -122,6 +133,10 @@ describe("sortListings", () => {
     const rows = [L({ listed_at: "2026-01-01" }), L({ listed_at: "2026-06-01" })];
     expect(sortListings(rows, "newest").map(r => r.listed_at)).toEqual(["2026-06-01", "2026-01-01"]);
   });
+  it("recent sorts parsed_at desc", () => {
+    const rows = [L({ parsed_at: "2026-06-01T00:00:00Z" }), L({ parsed_at: "2026-06-20T00:00:00Z" })];
+    expect(sortListings(rows, "recent").map(r => r.parsed_at)).toEqual(["2026-06-20T00:00:00Z", "2026-06-01T00:00:00Z"]);
+  });
   it("confidence orders high > medium > low", () => {
     const rows = [L({ parse_confidence: "low" }), L({ parse_confidence: "high" }), L({ parse_confidence: "medium" })];
     expect(sortListings(rows, "confidence").map(r => r.parse_confidence)).toEqual(["high", "medium", "low"]);
@@ -130,7 +145,7 @@ describe("sortListings", () => {
 
 describe("URL codec round-trip", () => {
   it("survives filters -> params -> filters for ALL fields", () => {
-    const state = f({ listingType: ["sale"], priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
+    const state = f({ listingType: ["sale"], parsedWithin: "7", priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
       propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: ["yes", "unknown"],
       seasons: ["full_year"], minStayMax: 6, subletting: ["no"], depositMax: 20000,
       waterIncluded: ["yes"], internetIncluded: ["no", "unknown"], amenities: ["has_pool", "has_wifi"],

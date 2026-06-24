@@ -8,6 +8,7 @@ export interface Listing {
   listed_at: string | null;
   raw_text: string | null;
   parser_version: string | null;
+  parsed_at: string | null;
   discard_reason: string | null;
   // classification
   is_offer: string | null;
@@ -59,10 +60,11 @@ export interface Listing {
   url: string | null;
 }
 
-export type SortKey = "newest" | "price_asc" | "price_desc" | "confidence";
+export type SortKey = "newest" | "recent" | "price_asc" | "price_desc" | "confidence";
 
 export interface FilterState {
   listingType: string[]; // "rent" | "sale"; empty = both
+  parsedWithin: string;  // "" = any; else number of days ("1"|"3"|"7"|"30")
   priceMin: number | null;
   priceMax: number | null;
   areas: string[];

@@ -1,10 +1,10 @@
 import type { Listing, FilterState, BoolState, SortKey } from "./types";
 
 export function defaultFilters(): FilterState {
-  return { listingType: ["rent"], priceMin: null, priceMax: null, areas: [], propertyTypes: [],
-    bedroomsMin: null, bathroomsMin: null, yearRound: [], seasons: [], minStayMax: null,
-    subletting: [], depositMax: null, waterIncluded: [], internetIncluded: [], amenities: [],
-    confidences: [], languages: [], sort: "newest" };
+  return { listingType: ["rent"], parsedWithin: "", priceMin: null, priceMax: null, areas: [],
+    propertyTypes: [], bedroomsMin: null, bathroomsMin: null, yearRound: [], seasons: [],
+    minStayMax: null, subletting: [], depositMax: null, waterIncluded: [], internetIncluded: [],
+    amenities: [], confidences: [], languages: [], sort: "newest" };
 }
 
 // rent vs sale is encoded in discard_reason ("for_sale" => sale, null => rent).
@@ -19,9 +19,17 @@ const boolState = (v: boolean | null): BoolState => (v === true ? "yes" : v === 
 const boolSet = (v: boolean | null, sel: BoolState[]) =>
   !Array.isArray(sel) || sel.length === 0 || sel.includes(boolState(v));
 
-export function applyFilters(rows: Listing[], s: FilterState): Listing[] {
+const DAY_MS = 86_400_000;
+const parsedWithinOk = (r: Listing, within: string, now: number) => {
+  if (!within) return true;
+  if (!r.parsed_at) return false;
+  return new Date(r.parsed_at).getTime() >= now - Number(within) * DAY_MS;
+};
+
+export function applyFilters(rows: Listing[], s: FilterState, now: number = Date.now()): Listing[] {
   return rows.filter((r) =>
     (s.listingType.length === 0 || s.listingType.includes(listingKind(r))) &&
+    parsedWithinOk(r, s.parsedWithin, now) &&
     leOrNull(r.price_thb, s.priceMax) && geOrNull(r.price_thb, s.priceMin) &&
     inSet(r.area_canonical, s.areas) && inSet(r.property_type, s.propertyTypes) &&
     geOrNull(r.bedrooms, s.bedroomsMin) && geOrNull(r.bathrooms, s.bathroomsMin) &&
@@ -52,6 +60,7 @@ export function sortListings(rows: Listing[], sort: SortKey): Listing[] {
   if (sort === "price_asc") out.sort((a, b) => nlast(a.price_thb) - nlast(b.price_thb));
   else if (sort === "price_desc") out.sort((a, b) => (b.price_thb ?? -Infinity) - (a.price_thb ?? -Infinity));
   else if (sort === "confidence") out.sort((a, b) => (CONF_RANK[b.parse_confidence ?? ""] ?? 0) - (CONF_RANK[a.parse_confidence ?? ""] ?? 0));
+  else if (sort === "recent") out.sort((a, b) => (b.parsed_at ?? "").localeCompare(a.parsed_at ?? ""));
   else out.sort((a, b) => (b.listed_at ?? "").localeCompare(a.listed_at ?? ""));
   return out;
 }
@@ -62,7 +71,7 @@ const numOrNull = (s: string | null) => {
   const n = Number(s);
   return s != null && s !== "" && !Number.isNaN(n) ? n : null;
 };
-const SORT_KEYS: SortKey[] = ["newest", "price_asc", "price_desc", "confidence"];
+const SORT_KEYS: SortKey[] = ["newest", "recent", "price_asc", "price_desc", "confidence"];
 
 export function filtersToParams(s: FilterState): URLSearchParams {
   const p = new URLSearchParams();
@@ -70,6 +79,7 @@ export function filtersToParams(s: FilterState): URLSearchParams {
   const setNum = (k: string, v: number | null) => v != null && p.set(k, String(v));
   const setArr = (k: string, v: string[]) => v.length && p.set(k, CSV(v));
   if (JSON.stringify(s.listingType) !== JSON.stringify(d.listingType)) setArr("deal", s.listingType);
+  if (s.parsedWithin) p.set("parsed", s.parsedWithin);
   setNum("priceMin", s.priceMin); setNum("priceMax", s.priceMax);
   setArr("areas", s.areas); setArr("types", s.propertyTypes);
   setNum("bedsMin", s.bedroomsMin); setNum("bathsMin", s.bathroomsMin);
@@ -89,6 +99,7 @@ export function paramsToFilters(p: URLSearchParams): FilterState {
   const d = defaultFilters();
   return { ...d,
     listingType: p.has("deal") ? unCSV(p.get("deal")) : d.listingType,
+    parsedWithin: p.get("parsed") ?? d.parsedWithin,
     priceMin: numOrNull(p.get("priceMin")), priceMax: numOrNull(p.get("priceMax")),
     areas: unCSV(p.get("areas")), propertyTypes: unCSV(p.get("types")),
     bedroomsMin: numOrNull(p.get("bedsMin")), bathroomsMin: numOrNull(p.get("bathsMin")),

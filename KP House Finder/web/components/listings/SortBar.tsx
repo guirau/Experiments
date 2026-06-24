@@ -1,8 +1,9 @@
 "use client";
 import type { SortKey } from "@/lib/types";
 const OPTS: { k: SortKey; label: string }[] = [
-  { k: "newest", label: "Newest" }, { k: "price_asc", label: "Price ↑" },
-  { k: "price_desc", label: "Price ↓" }, { k: "confidence", label: "Confidence" },
+  { k: "newest", label: "Newest" }, { k: "recent", label: "Recently added" },
+  { k: "price_asc", label: "Price ↑" }, { k: "price_desc", label: "Price ↓" },
+  { k: "confidence", label: "Confidence" },
 ];
 export function SortBar({ count, sort, onSort }: { count: number; sort: SortKey; onSort: (s: SortKey) => void }) {
   return (
