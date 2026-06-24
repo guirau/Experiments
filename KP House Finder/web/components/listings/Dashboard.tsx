@@ -3,10 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useListings } from "@/hooks/useListings";
 import { useFilters } from "@/hooks/useFilters";
 import { useCollections } from "@/hooks/useCollections";
+import type { Listing } from "@/lib/types";
 import { applyFilters, sortListings, countByArea } from "@/lib/filters";
-import { updatePrice } from "@/lib/supabase";
+import { updatePrice, updateListing } from "@/lib/supabase";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { AreaMap } from "@/components/map/AreaMap";
+import { EditModal } from "./EditModal";
 import { ListingGrid } from "./ListingGrid";
 import { SortBar } from "./SortBar";
 import { ActiveChips } from "./ActiveChips";
@@ -20,6 +22,7 @@ export function Dashboard() {
   const { filters, setFilters, reset } = useFilters();
   const [drawer, setDrawer] = useState(false);
   const [view, setView] = useState<View>("list");
+  const [editing, setEditing] = useState<Listing | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const { removed, saved, contacted, remove, restore, undoRemove, toggleSave, toggleContacted } = useCollections();
   const removedSet = useMemo(() => new Set(removed), [removed]);
@@ -46,6 +49,12 @@ export function Dashboard() {
   const handleEditPrice = useCallback(async (id: string, price: number | null) => {
     await updatePrice(id, price);
     updateLocal(id, { price_thb: price });
+  }, [updateLocal]);
+
+  // Edit-modal save: write the full field patch to Supabase, then sync local state.
+  const handleEditListing = useCallback(async (id: string, patch: Record<string, unknown>) => {
+    await updateListing(id, patch);
+    updateLocal(id, patch as Partial<Listing>);
   }, [updateLocal]);
 
   // Mobile filter drawer: close on Escape and move focus into it when opened.
@@ -109,21 +118,21 @@ export function Dashboard() {
           ) : view === "saved" ? (
             savedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No saved listings yet — tap ☆ Save on a card.</p>
-              : <ListingGrid listings={savedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
+              : <ListingGrid listings={savedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} onOpen={setEditing} />
           ) : view === "contacted" ? (
             contactedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No contacted listings yet — tap ✆ Contacted on a card.</p>
-              : <ListingGrid listings={contactedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
+              : <ListingGrid listings={contactedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} onOpen={setEditing} />
           ) : view === "removed" ? (
             removedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>Nothing removed. Use ✕ on a card to hide listings you’re not interested in.</p>
-              : <ListingGrid listings={removedList} onRestore={restore} />
+              : <ListingGrid listings={removedList} onRestore={restore} onOpen={setEditing} />
           ) : loading ? (
             <Skeleton />
           ) : visible.length === 0 ? (
             <EmptyState onClear={reset} />
           ) : (
-            <ListingGrid listings={visible} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
+            <ListingGrid listings={visible} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} onOpen={setEditing} />
           )}
         </main>
       </div>
@@ -137,6 +146,8 @@ export function Dashboard() {
           </div>
         </div>
       )}
+
+      {editing && <EditModal listing={editing} onClose={() => setEditing(null)} onSave={handleEditListing} />}
     </div>
   );
 }

@@ -50,9 +50,11 @@ export async function fetchListings(): Promise<Listing[]> {
   return mergeLinks(unique, posts);
 }
 
-// Persist an edited price to listings_parsed (anon UPDATE policy required). null clears it.
-export async function updatePrice(id: string, price: number | null): Promise<void> {
+// Persist edited fields to listings_parsed (anon UPDATE policy required).
+export async function updateListing(id: string, patch: Record<string, unknown>): Promise<void> {
   const sb = client();
-  const { error } = await sb.from("listings_parsed").update({ price_thb: price }).eq("id", id);
+  const { error } = await sb.from("listings_parsed").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+export const updatePrice = (id: string, price: number | null) => updateListing(id, { price_thb: price });
