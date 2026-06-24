@@ -44,7 +44,11 @@ export function sortListings(rows: Listing[], sort: SortKey): Listing[] {
 
 const CSV = (a: string[]) => a.join(",");
 const unCSV = (s: string | null) => (s ? s.split(",").filter(Boolean) : []);
-const numOrNull = (s: string | null) => (s != null && s !== "" ? Number(s) : null);
+const numOrNull = (s: string | null) => {
+  const n = Number(s);
+  return s != null && s !== "" && !Number.isNaN(n) ? n : null;
+};
+const SORT_KEYS: SortKey[] = ["newest", "price_asc", "price_desc", "confidence"];
 
 export function filtersToParams(s: FilterState): URLSearchParams {
   const p = new URLSearchParams();
@@ -76,5 +80,5 @@ export function paramsToFilters(p: URLSearchParams): FilterState {
     depositMax: numOrNull(p.get("depositMax")), waterIncluded: tg("water", d.waterIncluded),
     internetIncluded: tg("internet", d.internetIncluded), amenities: unCSV(p.get("amenities")),
     confidences: unCSV(p.get("conf")), languages: unCSV(p.get("lang")),
-    sort: (p.get("sort") as SortKey) || d.sort };
+    sort: SORT_KEYS.includes(p.get("sort") as SortKey) ? (p.get("sort") as SortKey) : d.sort };
 }

@@ -76,6 +76,10 @@ describe("sortListings", () => {
     const rows = [L({ price_thb: null }), L({ price_thb: 9000 }), L({ price_thb: 5000 })];
     expect(sortListings(rows, "price_asc").map(r => r.price_thb)).toEqual([5000, 9000, null]);
   });
+  it("price_desc puts nulls last", () => {
+    const rows = [L({ price_thb: null }), L({ price_thb: 5000 }), L({ price_thb: 9000 })];
+    expect(sortListings(rows, "price_desc").map(r => r.price_thb)).toEqual([9000, 5000, null]);
+  });
   it("newest sorts listed_at desc", () => {
     const rows = [L({ listed_at: "2026-01-01" }), L({ listed_at: "2026-06-01" })];
     expect(sortListings(rows, "newest").map(r => r.listed_at)).toEqual(["2026-06-01", "2026-01-01"]);
@@ -87,13 +91,23 @@ describe("sortListings", () => {
 });
 
 describe("URL codec round-trip", () => {
-  it("survives filters -> params -> filters", () => {
+  it("survives filters -> params -> filters for ALL fields", () => {
     const state = f({ priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
-      yearRound: "yes", subletting: "no", bedroomsMin: 2, amenities: ["has_pool"],
-      seasons: ["full_year"], sort: "price_asc" });
+      propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: "yes",
+      seasons: ["full_year"], minStayMax: 6, subletting: "no", depositMax: 20000,
+      waterIncluded: "yes", internetIncluded: "no", amenities: ["has_pool", "has_wifi"],
+      confidences: ["high", "medium"], languages: ["en"], sort: "price_asc" });
     expect(paramsToFilters(filtersToParams(state))).toEqual(state);
   });
   it("empty params yields defaults", () => {
     expect(paramsToFilters(new URLSearchParams())).toEqual(defaultFilters());
+  });
+  it("malformed numeric param becomes null (not NaN)", () => {
+    const out = paramsToFilters(new URLSearchParams("priceMax=abc"));
+    expect(out.priceMax).toBeNull();
+  });
+  it("invalid sort param falls back to default", () => {
+    const out = paramsToFilters(new URLSearchParams("sort=hacked"));
+    expect(out.sort).toBe("newest");
   });
 });
