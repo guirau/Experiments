@@ -23,16 +23,54 @@ export interface ListingCardProps {
   onSave?: (id: string) => void;
   onRemove?: (id: string) => void;
   onRestore?: (id: string) => void;
+  onEditPrice?: (id: string, price: number | null) => Promise<void> | void;
 }
 
-export function ListingCard({ listing, saved = false, onSave, onRemove, onRestore }: ListingCardProps) {
+export function ListingCard({ listing, saved = false, onSave, onRemove, onRestore, onEditPrice }: ListingCardProps) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
   const href = postHref(listing);
   const specs = [listing.property_type, listing.bedrooms != null ? `${listing.bedrooms}bd` : null, listing.bathrooms != null ? `${listing.bathrooms}ba` : null].filter(Boolean).join(" · ");
+
+  const startEdit = () => {
+    if (!onEditPrice) return;
+    setDraft(listing.price_thb != null ? String(listing.price_thb) : "");
+    setEditing(true);
+  };
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const next = trimmed === "" ? null : Math.round(Number(trimmed));
+    if (trimmed !== "" && (!Number.isFinite(next) || (next as number) < 0)) { setEditing(false); return; }
+    if (next === listing.price_thb) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await onEditPrice!(listing.id, next);
+      setEditing(false);
+    } catch {
+      window.alert("Couldn't save the price — please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <article className="rounded-2xl border p-4 transition-shadow hover:shadow-[var(--shadow)]" style={{ borderColor: "var(--line)", background: "var(--surface)" }}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-lg font-semibold">{price(listing)}</span>
+        {editing ? (
+          <input type="number" inputMode="numeric" autoFocus aria-label="Edit price (THB)" disabled={saving}
+            value={draft} onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commit(); else if (e.key === "Escape") setEditing(false); }}
+            onBlur={() => !saving && setEditing(false)}
+            className="w-28 rounded-lg border px-2 py-0.5 text-lg font-semibold" style={{ borderColor: "var(--accent)" }} />
+        ) : (
+          <span className="text-lg font-semibold" onDoubleClick={startEdit}
+            title={onEditPrice ? "Double-click to edit price" : undefined}
+            style={{ cursor: onEditPrice ? "text" : "default" }}>
+            {price(listing)}{saving ? " …" : ""}
+          </span>
+        )}
         <span className="text-sm" style={{ color: "var(--muted)" }}>{areaName(listing.area_canonical)}</span>
       </div>
       <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>{specs || "—"}</p>

@@ -46,3 +46,10 @@ export async function fetchListings(): Promise<Listing[]> {
   const unique = offers.filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)));
   return mergeLinks(unique, posts);
 }
+
+// Persist an edited price to listings_parsed (anon UPDATE policy required). null clears it.
+export async function updatePrice(id: string, price: number | null): Promise<void> {
+  const sb = client();
+  const { error } = await sb.from("listings_parsed").update({ price_thb: price }).eq("id", id);
+  if (error) throw error;
+}

@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useListings } from "@/hooks/useListings";
 import { useFilters } from "@/hooks/useFilters";
 import { useCollections } from "@/hooks/useCollections";
 import { applyFilters, sortListings, countByArea } from "@/lib/filters";
+import { updatePrice } from "@/lib/supabase";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { AreaMap } from "@/components/map/AreaMap";
 import { ListingGrid } from "./ListingGrid";
@@ -15,7 +16,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 type View = "list" | "map" | "saved" | "removed";
 
 export function Dashboard() {
-  const { listings, loading, error } = useListings();
+  const { listings, loading, error, updateLocal } = useListings();
   const { filters, setFilters, reset } = useFilters();
   const [drawer, setDrawer] = useState(false);
   const [view, setView] = useState<View>("list");
@@ -37,6 +38,13 @@ export function Dashboard() {
     [listings, filters, removedSet]);
   const toggleArea = (slug: string) =>
     setFilters({ ...filters, areas: filters.areas.includes(slug) ? filters.areas.filter((a) => a !== slug) : [...filters.areas, slug] });
+
+  // Edit price: write to Supabase first, then sync the in-memory listing (throws on
+  // failure so the card can surface it and keep editing).
+  const handleEditPrice = useCallback(async (id: string, price: number | null) => {
+    await updatePrice(id, price);
+    updateLocal(id, { price_thb: price });
+  }, [updateLocal]);
 
   // Mobile filter drawer: close on Escape and move focus into it when opened.
   useEffect(() => {
@@ -98,7 +106,7 @@ export function Dashboard() {
           ) : view === "saved" ? (
             savedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No saved listings yet — tap ☆ Save on a card.</p>
-              : <ListingGrid listings={savedList} savedSet={savedSet} onSave={toggleSave} onRemove={remove} />
+              : <ListingGrid listings={savedList} savedSet={savedSet} onSave={toggleSave} onRemove={remove} onEditPrice={handleEditPrice} />
           ) : view === "removed" ? (
             removedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>Nothing removed. Use ✕ on a card to hide listings you’re not interested in.</p>
@@ -108,7 +116,7 @@ export function Dashboard() {
           ) : visible.length === 0 ? (
             <EmptyState onClear={reset} />
           ) : (
-            <ListingGrid listings={visible} savedSet={savedSet} onSave={toggleSave} onRemove={remove} />
+            <ListingGrid listings={visible} savedSet={savedSet} onSave={toggleSave} onRemove={remove} onEditPrice={handleEditPrice} />
           )}
         </main>
       </div>

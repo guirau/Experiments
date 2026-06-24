@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchListings } from "@/lib/supabase";
 import type { Listing } from "@/lib/types";
 
@@ -15,5 +15,10 @@ export function useListings() {
       .finally(() => on && setLoading(false));
     return () => { on = false; };
   }, []);
-  return { listings, loading, error };
+
+  const updateLocal = useCallback((id: string, patch: Partial<Listing>) => {
+    setListings((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }, []);
+
+  return { listings, loading, error, updateLocal };
 }
