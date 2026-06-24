@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultFilters, applyFilters, sortListings, filtersToParams, paramsToFilters } from "./filters";
+import { defaultFilters, applyFilters, sortListings, filtersToParams, paramsToFilters, countByArea } from "./filters";
 import type { Listing, FilterState } from "./types";
 
 function L(over: Partial<Listing>): Listing {
@@ -83,6 +83,14 @@ describe("applyFilters", () => {
       L({ price_thb: 8000, area_canonical: "ban_tai", year_round: true }),
     ];
     expect(applyFilters(rows, f({ priceMax: 10000, areas: ["srithanu"], yearRound: ["yes"] }))).toHaveLength(1);
+  });
+});
+
+describe("countByArea", () => {
+  it("groups by area_canonical and maps null -> unknown", () => {
+    const rows = [L({ area_canonical: "srithanu" }), L({ area_canonical: "srithanu" }),
+      L({ area_canonical: "ban_tai" }), L({ area_canonical: null })];
+    expect(countByArea(rows)).toEqual({ srithanu: 2, ban_tai: 1, unknown: 1 });
   });
 });
 

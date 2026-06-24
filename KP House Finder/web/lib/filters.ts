@@ -28,6 +28,16 @@ export function applyFilters(rows: Listing[], s: FilterState): Listing[] {
   );
 }
 
+// listings grouped by area_canonical (null -> "unknown"); used for the map count badges.
+export function countByArea(rows: Listing[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows) {
+    const a = r.area_canonical ?? "unknown";
+    out[a] = (out[a] ?? 0) + 1;
+  }
+  return out;
+}
+
 const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
 const nlast = (v: number | null) => (v == null ? Infinity : v);
 
