@@ -106,6 +106,27 @@ defaults. A result count + active-filter chips sit above the grid.
 - **Sort:** newest (`listed_at` desc, default), price asc/desc, confidence.
 - **Scope:** offers only by default (`discard_reason IS NULL`); a toggle can reveal flagged.
 
+## Page layout (chosen: left filter rail + 3-up grid)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  KP HOUSE FINDER            1805 offers · sort: newest ▾  │  sticky header
+├───────────────┬──────────────────────────────────────────┤
+│ FILTERS       │  active-filter chips · result count       │
+│ (sticky rail) │  ┌────────┐ ┌────────┐ ┌────────┐         │
+│ Core…         │  │ card   │ │ card   │ │ card   │         │
+│ Goals…        │  └────────┘ └────────┘ └────────┘         │
+│ Amenities…    │  ┌────────┐ ┌────────┐ ┌────────┐         │
+│ [clear all]   │  │ card   │ │ card   │ │ card   │  3-col  │
+└───────────────┴──────────────────────────────────────────┘
+```
+
+- **Desktop (≥1024px):** persistent sticky left rail (`FilterSidebar`) + 3-column card
+  grid that scrolls independently; sticky header with sort + result count.
+- **Tablet (768–1023px):** 2-column grid; rail still left but narrower.
+- **Mobile (<768px):** rail collapses into a "Filters" button → slide-over drawer;
+  grid goes 1-column. Active-filter chips + count stay above the grid.
+
 ## Error handling
 - Missing `NEXT_PUBLIC_SUPABASE_*` → a clear setup message, not a blank page.
 - Fetch failure → visible error state with a retry.
