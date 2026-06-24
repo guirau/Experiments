@@ -60,19 +60,23 @@ def main():
         print("Nothing new to extract.")
         return
 
-    rows, dropped = [], 0
+    # Upsert per batch so a long run is crash-safe and resumable: persisted ids are
+    # skipped on restart, so progress is never lost or re-charged to the LLM.
+    total, dropped = 0, 0
     for start in range(0, len(todo), extract.BATCH_SIZE):
         chunk = todo[start:start + extract.BATCH_SIZE]
         fields_list = extract.extract_batch([p.get("text") or "" for p in chunk])
+        batch_rows = []
         for post, fields in zip(chunk, fields_list):
             if fields.get("discard_reason"):
                 dropped += 1
-            rows.append(build_parsed_row(post, fields))
-        print(f"  parsed {min(start + extract.BATCH_SIZE, len(todo))}/{len(todo)}")
+            batch_rows.append(build_parsed_row(post, fields))
+        db.upsert_parsed(client, batch_rows)
+        total += len(batch_rows)
+        print(f"  upserted {total}/{len(todo)}")
 
-    db.upsert_parsed(client, rows)
-    kept = len(rows) - dropped
-    print(f"\nUpserted {len(rows)} rows ({kept} offers, {dropped} flagged/discarded).")
+    kept = total - dropped
+    print(f"\nUpserted {total} rows ({kept} offers, {dropped} flagged/discarded).")
 
 
 if __name__ == "__main__":
