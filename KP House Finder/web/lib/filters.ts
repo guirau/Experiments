@@ -1,30 +1,28 @@
-import type { Listing, FilterState, Tri, SortKey } from "./types";
+import type { Listing, FilterState, BoolState, SortKey } from "./types";
 
 export function defaultFilters(): FilterState {
   return { priceMin: null, priceMax: null, areas: [], propertyTypes: [], bedroomsMin: null,
-    bathroomsMin: null, yearRound: "any", seasons: [], minStayMax: null, subletting: "any",
-    depositMax: null, waterIncluded: "any", internetIncluded: "any", amenities: [],
+    bathroomsMin: null, yearRound: [], seasons: [], minStayMax: null, subletting: [],
+    depositMax: null, waterIncluded: [], internetIncluded: [], amenities: [],
     confidences: [], languages: [], sort: "newest" };
 }
 
 const geOrNull = (v: number | null, min: number | null) => min == null || v == null || v >= min;
 const leOrNull = (v: number | null, max: number | null) => max == null || v == null || v <= max;
 const inSet = (v: string | null, set: string[]) => set.length === 0 || (v != null && set.includes(v));
-function tri(v: boolean | null, t: Tri) {
-  if (t === "any") return true;
-  if (t === "yes") return v === true;
-  return v === false;
-}
+const boolState = (v: boolean | null): BoolState => (v === true ? "yes" : v === false ? "no" : "unknown");
+// empty set = no constraint; otherwise the listing's state (yes/no/unknown) must be selected
+const boolSet = (v: boolean | null, sel: BoolState[]) => sel.length === 0 || sel.includes(boolState(v));
 
 export function applyFilters(rows: Listing[], s: FilterState): Listing[] {
   return rows.filter((r) =>
     leOrNull(r.price_thb, s.priceMax) && geOrNull(r.price_thb, s.priceMin) &&
     inSet(r.area_canonical, s.areas) && inSet(r.property_type, s.propertyTypes) &&
     geOrNull(r.bedrooms, s.bedroomsMin) && geOrNull(r.bathrooms, s.bathroomsMin) &&
-    tri(r.year_round, s.yearRound) && inSet(r.season, s.seasons) &&
-    leOrNull(r.min_stay_months, s.minStayMax) && tri(r.subletting_allowed, s.subletting) &&
-    leOrNull(r.deposit_thb, s.depositMax) && tri(r.water_included, s.waterIncluded) &&
-    tri(r.internet_included, s.internetIncluded) &&
+    boolSet(r.year_round, s.yearRound) && inSet(r.season, s.seasons) &&
+    leOrNull(r.min_stay_months, s.minStayMax) && boolSet(r.subletting_allowed, s.subletting) &&
+    leOrNull(r.deposit_thb, s.depositMax) && boolSet(r.water_included, s.waterIncluded) &&
+    boolSet(r.internet_included, s.internetIncluded) &&
     s.amenities.every((a) => (r as unknown as Record<string, unknown>)[a] === true) &&
     inSet(r.parse_confidence, s.confidences) && inSet(r.post_language, s.languages)
   );
@@ -55,30 +53,31 @@ export function filtersToParams(s: FilterState): URLSearchParams {
   const d = defaultFilters();
   const setNum = (k: string, v: number | null) => v != null && p.set(k, String(v));
   const setArr = (k: string, v: string[]) => v.length && p.set(k, CSV(v));
-  const setTri = (k: string, v: Tri) => v !== "any" && p.set(k, v);
   setNum("priceMin", s.priceMin); setNum("priceMax", s.priceMax);
   setArr("areas", s.areas); setArr("types", s.propertyTypes);
   setNum("bedsMin", s.bedroomsMin); setNum("bathsMin", s.bathroomsMin);
-  setTri("yearRound", s.yearRound); setArr("seasons", s.seasons);
-  setNum("minStayMax", s.minStayMax); setTri("sublet", s.subletting);
-  setNum("depositMax", s.depositMax); setTri("water", s.waterIncluded);
-  setTri("internet", s.internetIncluded); setArr("amenities", s.amenities);
+  setArr("yearRound", s.yearRound); setArr("seasons", s.seasons);
+  setNum("minStayMax", s.minStayMax); setArr("sublet", s.subletting);
+  setNum("depositMax", s.depositMax); setArr("water", s.waterIncluded);
+  setArr("internet", s.internetIncluded); setArr("amenities", s.amenities);
   setArr("conf", s.confidences); setArr("lang", s.languages);
   if (s.sort !== d.sort) p.set("sort", s.sort);
   return p;
 }
 
+const BOOL_STATES = ["yes", "no", "unknown"];
+const unBool = (s: string | null): BoolState[] => unCSV(s).filter((x): x is BoolState => BOOL_STATES.includes(x));
+
 export function paramsToFilters(p: URLSearchParams): FilterState {
   const d = defaultFilters();
-  const tg = (k: string, fb: Tri): Tri => { const v = p.get(k); return v === "yes" || v === "no" ? v : fb; };
   return { ...d,
     priceMin: numOrNull(p.get("priceMin")), priceMax: numOrNull(p.get("priceMax")),
     areas: unCSV(p.get("areas")), propertyTypes: unCSV(p.get("types")),
     bedroomsMin: numOrNull(p.get("bedsMin")), bathroomsMin: numOrNull(p.get("bathsMin")),
-    yearRound: tg("yearRound", d.yearRound), seasons: unCSV(p.get("seasons")),
-    minStayMax: numOrNull(p.get("minStayMax")), subletting: tg("sublet", d.subletting),
-    depositMax: numOrNull(p.get("depositMax")), waterIncluded: tg("water", d.waterIncluded),
-    internetIncluded: tg("internet", d.internetIncluded), amenities: unCSV(p.get("amenities")),
+    yearRound: unBool(p.get("yearRound")), seasons: unCSV(p.get("seasons")),
+    minStayMax: numOrNull(p.get("minStayMax")), subletting: unBool(p.get("sublet")),
+    depositMax: numOrNull(p.get("depositMax")), waterIncluded: unBool(p.get("water")),
+    internetIncluded: unBool(p.get("internet")), amenities: unCSV(p.get("amenities")),
     confidences: unCSV(p.get("conf")), languages: unCSV(p.get("lang")),
     sort: SORT_KEYS.includes(p.get("sort") as SortKey) ? (p.get("sort") as SortKey) : d.sort };
 }

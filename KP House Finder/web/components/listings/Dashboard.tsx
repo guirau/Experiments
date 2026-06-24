@@ -36,7 +36,7 @@ export function Dashboard() {
       {error && <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--warn)" }}>Couldn&apos;t load listings: {error}</div>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <div className="hidden lg:block"><div className="sticky top-20"><FilterSidebar filters={filters} setFilters={setFilters} onClear={reset} /></div></div>
+        <div className="hidden lg:block"><div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain pr-1"><FilterSidebar filters={filters} setFilters={setFilters} onClear={reset} /></div></div>
 
         <main>
           <SortBar count={results.length} sort={filters.sort} onSort={(s) => setFilters({ ...filters, sort: s })} />

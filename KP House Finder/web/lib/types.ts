@@ -1,4 +1,4 @@
-export type Tri = "any" | "yes" | "no";
+export type BoolState = "yes" | "no" | "unknown";
 
 export interface Listing {
   // control / meta
@@ -68,13 +68,13 @@ export interface FilterState {
   propertyTypes: string[];
   bedroomsMin: number | null;
   bathroomsMin: number | null;
-  yearRound: Tri;
+  yearRound: BoolState[];
   seasons: string[];
   minStayMax: number | null;
-  subletting: Tri;
+  subletting: BoolState[];
   depositMax: number | null;
-  waterIncluded: Tri;
-  internetIncluded: Tri;
+  waterIncluded: BoolState[];
+  internetIncluded: BoolState[];
   amenities: string[];
   confidences: string[];
   languages: string[];

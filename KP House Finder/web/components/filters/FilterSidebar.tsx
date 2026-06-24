@@ -4,7 +4,7 @@ import { AREA_ENUM, PROPERTY_TYPES, SEASONS, CONFIDENCES, LANGUAGES } from "@/li
 import { areaName } from "@/lib/areas";
 import { PriceRange } from "./PriceRange";
 import { MultiSelect } from "./MultiSelect";
-import { TriStateToggle } from "./TriStateToggle";
+import { BoolFilter } from "./BoolFilter";
 import { NumberMax } from "./NumberMax";
 import { AmenityToggles } from "./AmenityToggles";
 
@@ -28,15 +28,15 @@ export function FilterSidebar({ filters, setFilters, onClear }:
       <NumberMax label="Min bedrooms" value={filters.bedroomsMin} onChange={(bedroomsMin) => set({ bedroomsMin })} />
       <NumberMax label="Min bathrooms" value={filters.bathroomsMin} onChange={(bathroomsMin) => set({ bathroomsMin })} />
       <Section>Long-term rental</Section>
-      <TriStateToggle label="Year-round" value={filters.yearRound} onChange={(yearRound) => set({ yearRound })} />
+      <BoolFilter label="Year-round" value={filters.yearRound} onChange={(yearRound) => set({ yearRound })} />
       <MultiSelect label="Season" options={SEASONS} selected={filters.seasons} onChange={(seasons) => set({ seasons })} />
       <NumberMax label="Max min-stay (months)" value={filters.minStayMax} onChange={(minStayMax) => set({ minStayMax })} />
       <Section>Sublet potential</Section>
-      <TriStateToggle label="Subletting allowed" value={filters.subletting} onChange={(subletting) => set({ subletting })} />
+      <BoolFilter label="Subletting allowed" value={filters.subletting} onChange={(subletting) => set({ subletting })} />
       <Section>Cost</Section>
       <NumberMax label="Max deposit ฿" value={filters.depositMax} onChange={(depositMax) => set({ depositMax })} />
-      <TriStateToggle label="Water included" value={filters.waterIncluded} onChange={(waterIncluded) => set({ waterIncluded })} />
-      <TriStateToggle label="Internet included" value={filters.internetIncluded} onChange={(internetIncluded) => set({ internetIncluded })} />
+      <BoolFilter label="Water included" value={filters.waterIncluded} onChange={(waterIncluded) => set({ waterIncluded })} />
+      <BoolFilter label="Internet included" value={filters.internetIncluded} onChange={(internetIncluded) => set({ internetIncluded })} />
       <Section>Amenities</Section>
       <AmenityToggles selected={filters.amenities} onChange={(amenities) => set({ amenities })} />
       <Section>Quality / language</Section>

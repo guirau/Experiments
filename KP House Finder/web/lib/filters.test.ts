@@ -35,14 +35,29 @@ describe("applyFilters", () => {
     expect(applyFilters(rows, f({ areas: ["srithanu"] }))).toHaveLength(1);
   });
 
-  it("tri-state yes requires true and hides null+false", () => {
+  it("bool set [yes] requires true and hides null+false", () => {
     const rows = [L({ year_round: true }), L({ year_round: false }), L({ year_round: null })];
-    expect(applyFilters(rows, f({ yearRound: "yes" })).map(r => r.year_round)).toEqual([true]);
+    expect(applyFilters(rows, f({ yearRound: ["yes"] })).map(r => r.year_round)).toEqual([true]);
   });
 
-  it("tri-state no requires false", () => {
+  it("bool set [no] requires false", () => {
     const rows = [L({ subletting_allowed: true }), L({ subletting_allowed: false })];
-    expect(applyFilters(rows, f({ subletting: "no" })).map(r => r.subletting_allowed)).toEqual([false]);
+    expect(applyFilters(rows, f({ subletting: ["no"] })).map(r => r.subletting_allowed)).toEqual([false]);
+  });
+
+  it("bool set [yes, unknown] matches true OR null (Unknown combinable)", () => {
+    const rows = [L({ year_round: true }), L({ year_round: false }), L({ year_round: null })];
+    expect(applyFilters(rows, f({ yearRound: ["yes", "unknown"] })).map(r => r.year_round)).toEqual([true, null]);
+  });
+
+  it("bool set [no, unknown] matches false OR null", () => {
+    const rows = [L({ subletting_allowed: true }), L({ subletting_allowed: false }), L({ subletting_allowed: null })];
+    expect(applyFilters(rows, f({ subletting: ["no", "unknown"] })).map(r => r.subletting_allowed)).toEqual([false, null]);
+  });
+
+  it("empty bool set is no constraint", () => {
+    const rows = [L({ year_round: true }), L({ year_round: false }), L({ year_round: null })];
+    expect(applyFilters(rows, f({ yearRound: [] }))).toHaveLength(3);
   });
 
   it("bedroomsMin keeps >= and keeps null", () => {
@@ -67,7 +82,7 @@ describe("applyFilters", () => {
       L({ price_thb: 8000, area_canonical: "srithanu", year_round: true }),
       L({ price_thb: 8000, area_canonical: "ban_tai", year_round: true }),
     ];
-    expect(applyFilters(rows, f({ priceMax: 10000, areas: ["srithanu"], yearRound: "yes" }))).toHaveLength(1);
+    expect(applyFilters(rows, f({ priceMax: 10000, areas: ["srithanu"], yearRound: ["yes"] }))).toHaveLength(1);
   });
 });
 
@@ -93,9 +108,9 @@ describe("sortListings", () => {
 describe("URL codec round-trip", () => {
   it("survives filters -> params -> filters for ALL fields", () => {
     const state = f({ priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
-      propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: "yes",
-      seasons: ["full_year"], minStayMax: 6, subletting: "no", depositMax: 20000,
-      waterIncluded: "yes", internetIncluded: "no", amenities: ["has_pool", "has_wifi"],
+      propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: ["yes", "unknown"],
+      seasons: ["full_year"], minStayMax: 6, subletting: ["no"], depositMax: 20000,
+      waterIncluded: ["yes"], internetIncluded: ["no", "unknown"], amenities: ["has_pool", "has_wifi"],
       confidences: ["high", "medium"], languages: ["en"], sort: "price_asc" });
     expect(paramsToFilters(filtersToParams(state))).toEqual(state);
   });
