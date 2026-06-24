@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-Extract structured listing fields from listings.csv (produced by combine.py)
-using the Claude SDK, writing parsed_listings.csv.
+Extract structured rental-listing fields from free text using the Claude SDK.
 
-Incremental: only rows whose `hash` is not already in parsed_listings.csv get
-sent to Claude, so running daily is cheap.
+Primary engine (source-agnostic, used by the v0 notebook and the v1 Supabase
+pipeline):
+    extract_batch(texts: list[str]) -> list[dict]   # one LLM call per batch
+    extract_fields(text: str)       -> dict          # thin single-row wrapper
 
-Usage:
+LLM-call minimization:
+  - texts shorter than MIN_TEXT_LEN are flagged not_a_listing WITHOUT a call,
+  - the rest are sent as ONE batched call returning a JSON array,
+  - on parse failure / length mismatch we fall back to per-row calls for that
+    batch only (correctness preserved, savings kept on the happy path).
+
+CSV path (legacy, still supported):
   export ANTHROPIC_API_KEY=sk-ant-...
   python extract.py                       # listings.csv -> parsed_listings.csv
   python extract.py in.csv out.csv        # custom names
-
-Output columns: the original (text, contact, date, source, hash) plus the
-extracted fields below.
 """
 
 import os
@@ -24,43 +28,42 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 
 MODEL = "claude-haiku-4-5-20251001"
+PARSER_VERSION = "fb-1.0"   # bump when the prompt/schema changes
+BATCH_SIZE = 10             # posts per LLM call
+MIN_TEXT_LEN = 15           # below this, skip the LLM and flag not_a_listing
 
-# Extracted fields = the OUTPUT csv columns. The prompt is built from this list,
-# plus one extra classification key ("is_housing", see MODEL_KEYS below) that the
-# model returns but is NOT written as a column — it's only used to drop non-house
-# rows. So prompt keys = MODEL_KEYS, output columns = EXTRACT_FIELDS (differ by one).
-EXTRACT_FIELDS = [
-    "is_offer",        # true = someone OFFERING a place; false = looking/wanted ad
-    "rental_type",     # "long-term" / "short-term" / "both" / null
-    "location",        # area/village, e.g. "Sri Thanu", "Hin Kong", "Ban Tai"
-    "price_thb",       # monthly price in THB (integer). If a range, the lower value.
-    "price_note",      # any nuance: range, "per night", seasonal, deposit, etc.
-    "bedrooms",        # integer or null
-    "bathrooms",       # integer or null
-    "house_size_sqm",  # integer or null
-    "available_from",  # date/phrase as written, or null
-    "min_term",        # minimum rental term if stated, else null
-    "aircon",          # true / false / null
-    "wifi",            # true / false / null
-    "pool",            # true / false / null
-    "kitchen",         # true / false / null
-    "washing_machine", # true / false / null
-    "parking",         # true / false / null
-    "furnished",       # true / false / null
-    "pets_allowed",    # true / false / null
-    "amenities",       # short comma-joined list of extras not covered above
-    "electricity",     # electricity terms if stated (e.g. "8 THB/unit"), else null
-    "contact_in_text", # phone/line/email/whatsapp found INSIDE the text, else null
-    "truncated",       # true if the text was cut off ("Read more"/"See more")
-    "notes",           # one short line for anything notable not captured above
-]
+# --- field schema -----------------------------------------------------------
+# The model returns EXACTLY these keys as one JSON object per post.
+CLASSIFICATION = ["discard_reason", "is_offer", "post_language", "parse_confidence", "multi_listing"]
+TIER1 = ["price_thb", "price_low_thb", "price_high_thb", "price_period", "season",
+         "bedrooms", "bathrooms", "property_type", "area_raw", "area_canonical"]
+TIER2 = ["min_stay_months", "available_from", "available_until", "year_round", "subletting_allowed"]
+TIER3 = ["deposit_thb", "electricity_rate_thb_per_unit", "water_included", "internet_included"]
+TIER4 = ["has_aircon", "has_wifi", "furnished", "has_kitchen", "has_pool", "has_parking",
+         "pet_friendly", "sea_view", "has_workspace", "has_terrace", "near_road",
+         "near_construction", "furnishings_list"]
+TIER5 = ["contact_raw", "contact_phone", "size_sqm"]
+MODEL_FIELDS = CLASSIFICATION + TIER1 + TIER2 + TIER3 + TIER4 + TIER5
 
-ORIGINAL_COLS = ["text", "contact", "date", "source", "hash"]
+# canonical Koh Phangan areas; area_canonical is coerced into this set.
+AREA_ENUM = ["thong_sala", "ban_tai", "ban_kai", "haad_rin", "srithanu", "chaloklum",
+             "mae_haad", "hin_kong", "woktum", "haad_yao", "haad_salad", "haad_son",
+             "thong_nai_pan", "bottle_beach", "than_sadet", "haad_yuan_tien",
+             "madeua_wan", "plai_laem", "other", "unknown"]
 
-# Classification key the model returns but we do NOT write to the CSV: used only
-# to filter out listings that are not about a house/room/accommodation.
-CLASSIFY_FIELD = "is_housing"
-MODEL_KEYS = [CLASSIFY_FIELD] + EXTRACT_FIELDS
+# enum field -> (allowed values, fallback for anything else)
+ENUMS = {
+    "discard_reason": (["not_a_listing", "wanted", "for_sale", "not_koh_phangan", "not_long_term"], None),
+    "is_offer": (["offer", "wanted", "ambiguous"], "ambiguous"),
+    "post_language": (["en", "th", "mixed", "other"], "other"),
+    "parse_confidence": (["low", "medium", "high"], "low"),
+    "price_period": (["month", "week", "night", "unknown"], "unknown"),
+    "season": (["low", "high", "full_year", "unknown"], "unknown"),
+    "property_type": (["house", "villa", "bungalow", "apartment", "studio", "room", "unknown"], "unknown"),
+    "area_canonical": (AREA_ENUM, "unknown"),
+    "near_construction": (["construction", "quiet", "unknown"], "unknown"),
+}
+LIST_FIELDS = {"furnishings_list"}
 
 _client = None
 
@@ -72,51 +75,94 @@ def get_client():
         _client = Anthropic()
     return _client
 
-SYSTEM_PROMPT = f"""You extract structured data from a single rental-listing message \
-posted in a Koh Phangan (Thailand) housing group on Facebook or WhatsApp.
 
-The text is one post/message. It may be an OFFER (someone renting a place out), \
-a WANTED ad (someone looking for a place), short-term or long-term, and may be \
-truncated with "Read more"/"See more".
-
-Return ONE JSON object with exactly these keys:
-{json.dumps(MODEL_KEYS, indent=2)}
-
-Rules:
-- Output ONLY the JSON object. No prose, no markdown, no code fences.
+# --- prompts ----------------------------------------------------------------
+# Shared rule block, reused by both the single and the batch system prompts.
+_SCHEMA_RULES = f"""GENERAL RULES
+- Output ONLY JSON. No prose, no markdown, no code fences.
 - Use null for anything not stated. NEVER invent or guess values.
-- is_housing: NOT every message in this group is about a place to live. Set true \
-ONLY if the message is about renting/finding a house, room, villa, bungalow, \
-apartment, studio, condo, or any accommodation. Set false if it is about something \
-else entirely: a motorbike/scooter/car/bicycle, a job, a service, a pet, an item \
-for sale (furniture, phone, surfboard), an event/party, or general chat. This is \
-independent of is_offer: a person LOOKING FOR a house is still housing (true).
-- is_offer: true if the poster is offering a place to rent; false if they are \
-looking for/seeking a place ("looking for", "we need", "anyone know a...").
-- rental_type: "long-term" (months+), "short-term" (nightly/weekly/holiday), \
-"both" if it explicitly offers both, else null.
-- price_thb: integer Thai Baht, monthly if available. "12,000 THB/month" -> 12000. \
-"55000/-per month" -> 55000. If only a nightly/weekly price, put it in price_note \
-and set price_thb to the monthly figure only if stated.
-- booleans (aircon, wifi, pool, etc.): true only if clearly present, false only if \
-clearly stated absent (e.g. "no pets" -> pets_allowed false), null if not mentioned.
-- amenities: short comma-separated extras (e.g. "TV, terrace, garden, fridge"). \
-Don't repeat things already in dedicated fields.
-- contact_in_text: copy any phone/line id/whatsapp/email found in the text verbatim; \
-null if none.
-- truncated: true if the text ends with or contains a "Read more"/"See more" cutoff.
-- notes: at most one short sentence; null if nothing extra."""
+- Booleans are true ONLY if clearly present, false ONLY if clearly stated absent, \
+null if not mentioned. null means UNKNOWN, which is NOT the same as false.
+
+CLASSIFICATION
+- discard_reason: set to ONE of these when the post should be excluded, else null:
+  - "not_a_listing": not about renting a place to live (bike/scooter/car, job, \
+service, item for sale, pet, event, general chat).
+  - "wanted": the poster is LOOKING FOR a place, not offering one.
+  - "for_sale": the property is being SOLD, not rented (e.g. "for sale", "land for \
+sale", a purchase/asking price to buy, leasehold/freehold sale). We want RENTALS only.
+  - "not_koh_phangan": clearly for another location (Koh Samui, Koh Tao, mainland, etc.).
+  - "not_long_term": clearly ONLY a short-term/holiday rental (nightly/weekly, "per \
+night", holiday let) with no long-term option.
+  A valid long-term-capable rental OFFER on Koh Phangan -> null.
+- is_offer: "offer" (offering a place), "wanted" (seeking a place), or "ambiguous".
+- post_language: "en", "th", "mixed", or "other" (any other language).
+- parse_confidence: "high" if clear and complete, "medium" if partial, "low" if \
+vague/truncated/hard to read.
+- multi_listing: true if the post bundles several distinct properties; then set \
+parse_confidence to "low" and extract the FIRST property's details.
+
+TIER 1 — CORE
+- price_thb: integer THB, MONTHLY. "12,000 THB/month" -> 12000. If a range, the LOWER \
+monthly value. If only nightly/weekly, leave price_thb null and set price_period.
+- price_low_thb / price_high_thb: when the post quotes a seasonal/low-high range.
+- price_period: "month" | "week" | "night" | "unknown".
+- season: "low" | "high" | "full_year" | "unknown".
+- property_type: house | villa | bungalow | apartment | studio | room | unknown.
+- area_raw: the area/village as written (e.g. "Sri Thanu", "Hin Kong").
+- area_canonical: map area_raw to EXACTLY ONE of: {", ".join(AREA_ENUM)}. Use "other" \
+for a real KP area not in the list, "unknown" if no area is stated.
+
+TIER 2 — LONG-TERM SUITABILITY: min_stay_months (integer), available_from (date or \
+"now"), available_until (usually null); \
+year_round: true if the place is explicitly available for the FULL year INCLUDING high \
+season (Dec-Mar); false if it is low-season-only or the owner reclaims it / raises the \
+price in high season; null if not stated. \
+subletting_allowed: true if subletting / Airbnb / Booking is explicitly permitted, \
+false if explicitly forbidden ("no Airbnb", "no subletting"), null if not mentioned.
+TIER 3 — COST: deposit_thb, electricity_rate_thb_per_unit (number), water_included, \
+internet_included (bool/null).
+TIER 4 — AMENITIES (bool/null unless noted): has_aircon, has_wifi, furnished, \
+has_kitchen, has_pool, has_parking, pet_friendly, sea_view, has_workspace, has_terrace, \
+near_road; near_construction ("construction"|"quiet"|"unknown"); furnishings_list \
+(short comma-free list of extras mentioned).
+TIER 5 — CONTACT: contact_raw (phone/Line/WhatsApp as written), contact_phone \
+(digits-normalized phone or null), size_sqm (integer or null)."""
+
+_KEYS_JSON = json.dumps(MODEL_FIELDS, indent=2)
+
+SYSTEM_PROMPT = f"""You extract structured data from ONE rental-related message posted \
+in a Koh Phangan (Thailand) Facebook housing group.
+
+Return ONE JSON object with EXACTLY these keys (no others):
+{_KEYS_JSON}
+
+{_SCHEMA_RULES}"""
+
+SYSTEM_PROMPT_BATCH = f"""You extract structured data from rental-related messages \
+posted in Koh Phangan (Thailand) Facebook housing groups.
+
+You will receive several posts, each delimited and numbered as "POST k:". Return a \
+JSON ARRAY containing EXACTLY ONE object per post, IN THE SAME ORDER as given. Do not \
+merge, skip, or reorder posts. Each object MUST have EXACTLY these keys (no others):
+{_KEYS_JSON}
+
+{_SCHEMA_RULES}"""
+
+
+def _strip_fences(raw):
+    return re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
 
 
 def call_claude(text):
+    """Single-post call -> dict. Returns {} on unparseable output (caller defaults)."""
     resp = get_client().messages.create(
         model=MODEL,
-        max_tokens=1024,
+        max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": text}],
     )
-    raw = "".join(b.text for b in resp.content if b.type == "text").strip()
-    raw = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
+    raw = _strip_fences("".join(b.text for b in resp.content if b.type == "text").strip())
     try:
         obj = json.loads(raw)
         return obj if isinstance(obj, dict) else {}
@@ -124,6 +170,98 @@ def call_claude(text):
         print("  ! could not parse model JSON for one row, leaving fields blank",
               file=sys.stderr)
         return {}
+
+
+def call_claude_batch(texts):
+    """Batched call -> list[dict] (one per input, in order). Raises on bad JSON.
+
+    Length validation lives in extract_batch so a wrong-length list triggers the
+    per-row fallback there.
+    """
+    numbered = "\n\n=====\n\n".join(f"POST {i}:\n{t}" for i, t in enumerate(texts, 1))
+    user = (f"There are {len(texts)} posts below. Return a JSON array of exactly "
+            f"{len(texts)} objects, in the same order.\n\n{numbered}")
+    resp = get_client().messages.create(
+        model=MODEL,
+        max_tokens=min(8192, 800 * len(texts) + 512),
+        system=SYSTEM_PROMPT_BATCH,
+        messages=[{"role": "user", "content": user}],
+    )
+    raw = _strip_fences("".join(b.text for b in resp.content if b.type == "text").strip())
+    obj = json.loads(raw)            # JSONDecodeError -> caught by extract_batch
+    if not isinstance(obj, list):
+        raise ValueError("batch response was not a JSON array")
+    return obj
+
+
+def _empty_fields():
+    return {k: None for k in MODEL_FIELDS}
+
+
+def _coerce(fields):
+    """Normalize a raw model dict into MODEL_FIELDS: lowercase enums (fallback on
+    invalid), join list fields, keep None as unknown, drop unknown keys."""
+    out = _empty_fields()
+    if not isinstance(fields, dict):
+        return out
+    for k, v in fields.items():
+        if k not in out:
+            continue
+        if v is None:
+            out[k] = None
+        elif k in LIST_FIELDS and isinstance(v, list):
+            out[k] = ", ".join(str(x) for x in v) or None
+        elif k in ENUMS:
+            allowed, fallback = ENUMS[k]
+            s = str(v).strip().lower()
+            out[k] = s if s in allowed else fallback
+        else:
+            out[k] = v
+    return out
+
+
+def _short_text_fields():
+    f = _empty_fields()
+    f["discard_reason"] = "not_a_listing"
+    f["parse_confidence"] = "low"
+    return f
+
+
+def extract_batch(texts):
+    """Raw texts -> normalized dicts over MODEL_FIELDS, aligned to input order.
+
+    Short texts skip the LLM. The rest go in ONE batched call; on parse failure or
+    length mismatch, fall back to per-row calls for that batch only.
+    """
+    out = [None] * len(texts)
+    call_idx, call_texts = [], []
+    for i, raw in enumerate(texts):
+        t = (raw or "").strip()
+        if len(t) < MIN_TEXT_LEN:
+            out[i] = _short_text_fields()
+        else:
+            call_idx.append(i)
+            call_texts.append(t)
+
+    if call_texts:
+        try:
+            results = call_claude_batch(call_texts)
+            if not isinstance(results, list) or len(results) != len(call_texts):
+                raise ValueError(
+                    f"batch returned {len(results) if isinstance(results, list) else type(results).__name__} "
+                    f"for {len(call_texts)} posts")
+        except Exception as e:  # JSON error, length mismatch, API hiccup -> per-row
+            print(f"  ! batch failed ({e}); falling back to per-row calls", file=sys.stderr)
+            results = [call_claude(t) for t in call_texts]
+        for idx, res in zip(call_idx, results):
+            out[idx] = _coerce(res)
+
+    return out
+
+
+def extract_fields(text):
+    """Single-text convenience wrapper used by the CSV path + tests."""
+    return extract_batch([text])[0]
 
 
 def load_parsed_hashes(out_path):
@@ -145,12 +283,22 @@ def load_parsed_rows(out_path):
         return list(csv.DictReader(f))
 
 
+def _csv_value(v):
+    if v is None:
+        return ""
+    if v is True:
+        return "true"
+    if v is False:
+        return "false"
+    return v
+
+
 def main():
     load_dotenv()  # read .env into os.environ if present
     if not os.environ.get("ANTHROPIC_API_KEY"):
         sys.exit("Set ANTHROPIC_API_KEY in .env or the environment first.")
 
-    args = [a for a in sys.argv[1:]]
+    args = list(sys.argv[1:])
     in_path = args[0] if len(args) >= 1 else "listings.csv"
     out_path = args[1] if len(args) >= 2 else "parsed_listings.csv"
 
@@ -170,34 +318,24 @@ def main():
         print("Nothing new to extract.")
         return
 
-    out_cols = ORIGINAL_COLS + EXTRACT_FIELDS
+    base_cols = ["text", "contact", "date", "source", "hash"]
+    out_cols = base_cols + MODEL_FIELDS
     new_parsed = []
     dropped = 0
-    for i, r in enumerate(todo, 1):
-        text = (r.get("text") or "").strip()
-        fields = call_claude(text) if len(text) >= 15 else {}
-        # Drop listings the model is confident are NOT housing (bikes, jobs,
-        # items for sale, etc.). Conservative: only drop on an explicit False,
-        # so uncertainty (None/missing/unparseable) keeps the row.
-        if fields.get(CLASSIFY_FIELD) is False:
-            dropped += 1
-            if i % 10 == 0 or i == len(todo):
-                print(f"  parsed {i}/{len(todo)}")
-            continue
-        row = {c: r.get(c, "") for c in ORIGINAL_COLS}
-        for k in EXTRACT_FIELDS:
-            v = fields.get(k, "")
-            # flatten lists (amenities) to a comma string for CSV
-            if isinstance(v, list):
-                v = ", ".join(str(x) for x in v)
-            elif isinstance(v, bool):
-                v = "true" if v else "false"
-            elif v is None:
-                v = ""
-            row[k] = v
-        new_parsed.append(row)
-        if i % 10 == 0 or i == len(todo):
-            print(f"  parsed {i}/{len(todo)}")
+    for start in range(0, len(todo), BATCH_SIZE):
+        chunk = todo[start:start + BATCH_SIZE]
+        fields_list = extract_batch([r.get("text") or "" for r in chunk])
+        for r, fields in zip(chunk, fields_list):
+            # CSV path keeps the "drop obvious junk" behavior (only not_a_listing).
+            if fields.get("discard_reason") == "not_a_listing":
+                dropped += 1
+                continue
+            row = {c: r.get(c, "") for c in base_cols}
+            for k in MODEL_FIELDS:
+                row[k] = _csv_value(fields.get(k))
+            new_parsed.append(row)
+        done_n = min(start + BATCH_SIZE, len(todo))
+        print(f"  parsed {done_n}/{len(todo)}")
 
     all_rows = existing_parsed + new_parsed
     with open(out_path, "w", newline="", encoding="utf-8") as f:
@@ -208,7 +346,7 @@ def main():
 
     msg = f"\nExtracted {len(new_parsed)} new rows. "
     if dropped:
-        msg += f"Dropped {dropped} non-housing row(s). "
+        msg += f"Dropped {dropped} not-a-listing row(s). "
     msg += f"{out_path} now has {len(all_rows)} rows."
     print(msg)
 
