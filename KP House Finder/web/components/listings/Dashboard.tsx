@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useListings } from "@/hooks/useListings";
 import { useFilters } from "@/hooks/useFilters";
 import { applyFilters, sortListings } from "@/lib/filters";
@@ -14,7 +14,17 @@ export function Dashboard() {
   const { listings, loading, error } = useListings();
   const { filters, setFilters, reset } = useFilters();
   const [drawer, setDrawer] = useState(false);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const results = useMemo(() => sortListings(applyFilters(listings, filters), filters.sort), [listings, filters]);
+
+  // Mobile filter drawer: close on Escape and move focus into it when opened.
+  useEffect(() => {
+    if (!drawer) return;
+    closeBtnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawer(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [drawer]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -38,8 +48,8 @@ export function Dashboard() {
       {drawer && (
         <div className="fixed inset-0 z-20 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setDrawer(false)} />
-          <div className="absolute left-0 top-0 h-full w-80 overflow-y-auto p-4" style={{ background: "var(--surface)" }}>
-            <button className="mb-2 text-sm underline" onClick={() => setDrawer(false)}>Close</button>
+          <div role="dialog" aria-modal="true" aria-label="Filters" className="absolute left-0 top-0 h-full w-80 overflow-y-auto p-4" style={{ background: "var(--surface)" }}>
+            <button ref={closeBtnRef} aria-label="Close filters" className="mb-2 text-sm underline" onClick={() => setDrawer(false)}>Close</button>
             <FilterSidebar filters={filters} setFilters={setFilters} onClear={reset} />
           </div>
         </div>

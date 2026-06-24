@@ -27,11 +27,11 @@ export function FilterSidebar({ filters, setFilters, onClear }:
       <MultiSelect label="Type" options={PROPERTY_TYPES} selected={filters.propertyTypes} onChange={(propertyTypes) => set({ propertyTypes })} />
       <NumberMax label="Min bedrooms" value={filters.bedroomsMin} onChange={(bedroomsMin) => set({ bedroomsMin })} />
       <NumberMax label="Min bathrooms" value={filters.bathroomsMin} onChange={(bathroomsMin) => set({ bathroomsMin })} />
-      <Section>Long-term (Goal 1)</Section>
+      <Section>Long-term rental</Section>
       <TriStateToggle label="Year-round" value={filters.yearRound} onChange={(yearRound) => set({ yearRound })} />
       <MultiSelect label="Season" options={SEASONS} selected={filters.seasons} onChange={(seasons) => set({ seasons })} />
       <NumberMax label="Max min-stay (months)" value={filters.minStayMax} onChange={(minStayMax) => set({ minStayMax })} />
-      <Section>Sublet (Goal 1b)</Section>
+      <Section>Sublet potential</Section>
       <TriStateToggle label="Subletting allowed" value={filters.subletting} onChange={(subletting) => set({ subletting })} />
       <Section>Cost</Section>
       <NumberMax label="Max deposit ฿" value={filters.depositMax} onChange={(depositMax) => set({ depositMax })} />

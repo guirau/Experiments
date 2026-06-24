@@ -5,9 +5,9 @@ export function MultiSelect({ label, options, selected, onChange, render }:
   return (
     <div className="mb-3">
       <div className="mb-1 text-sm font-medium">{label}</div>
-      <div className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
         {options.map((o) => (
-          <button key={o} onClick={() => toggle(o)} className="rounded-full border px-2.5 py-1 text-xs"
+          <button key={o} type="button" aria-pressed={selected.includes(o)} onClick={() => toggle(o)} className="rounded-full border px-2.5 py-1 text-xs"
             style={selected.includes(o) ? { background: "var(--accent)", color: "var(--accent-ink)", borderColor: "var(--accent)" } : { borderColor: "var(--line)" }}>
             {render ? render(o) : o}
           </button>
