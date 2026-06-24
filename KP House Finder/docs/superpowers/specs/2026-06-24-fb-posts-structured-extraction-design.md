@@ -1,5 +1,11 @@
 # Design — KP Rentals: `fb_posts` → Structured Listings (Analysis Phase, slice 1)
 
+> **AMENDED 2026-06-24.** Delivered in two stages: a **v0 read-only notebook** checkpoint
+> (10 rows, one batched call) before the v1 Supabase pipeline, and **LLM-call minimization
+> via 10-per-call batching** (with per-row fallback) on top of the existing once-ever
+> incrementality. The "one combined LLM call" decision below now means one call *per batch
+> of posts*, not per post. Canonical field reference: `docs/FIELD_SCHEMA.md`.
+
 > Superpowers `brainstorming` design output (approved). The task-by-task build plan
 > derived from this is `docs/superpowers/plans/2026-06-24-fb-posts-structured-extraction.md`.
 

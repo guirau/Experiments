@@ -1,5 +1,14 @@
 # fb_posts → Structured Listings Implementation Plan
 
+> **AMENDED 2026-06-24 during execution.** Two changes from the task list below:
+> (1) a **v0 read-only Jupyter notebook** (`notebooks/v0_fb_posts_transform.ipynb`,
+> 10 rows, one batched call) was added as a visual checkpoint before any Supabase writes;
+> (2) the engine now **batches 10 posts per LLM call** with a per-row fallback, so
+> `extract.py` exposes `extract_batch()` / `call_claude_batch()` and `extract_fields()`
+> is a thin single-row wrapper. Tasks below remain accurate in intent; the prompt was
+> also tuned so truncated-but-housing posts are kept. Canonical field reference now lives
+> in `docs/FIELD_SCHEMA.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Extract structured rental fields from Supabase `fb_posts.text` via one LLM call and upsert them into a new `listings_parsed` table, incrementally and idempotently.
