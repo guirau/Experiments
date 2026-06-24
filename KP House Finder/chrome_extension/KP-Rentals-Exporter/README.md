@@ -36,6 +36,27 @@ and run `python parse_listings.py`. Files are auto-detected:
 
 ## Notes
 - Keep the tab in front while either mode runs.
+
+## Running long scrapes on Mac (keep the laptop awake)
+A long Facebook grab pauses if the Mac sleeps. To keep it awake, open Terminal
+and run this before/while scraping, then press Ctrl+C when done:
+
+    caffeinate -dimsu
+
+Or auto-release after N seconds (e.g. 2 hours):
+
+    caffeinate -dimsu -t 7200
+
+Flags: -d display, -i system idle, -m disk, -s even on battery, -u user-active.
+NOTE: closing the laptop lid still sleeps a MacBook regardless of caffeinate —
+keep the lid open for an uninterrupted run (or use clamshell mode with an
+external display + keyboard).
+
+Safety net: even if the Mac sleeps or the tab crashes mid-scrape, every post
+collected so far is already saved to storage. Just reopen the group and click
+Grab — it shows "↻ Resuming from N saved posts" and continues.
+
+## More notes
 - Facebook dates are decoded from the page (best-effort; some recent posts
   show relative times). WhatsApp dates are exact.
 - If a grab returns nothing after a site redesign: for Facebook the

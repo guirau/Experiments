@@ -3,65 +3,293 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { font: 13px/1.4 -apple-system, system-ui, sans-serif; width: 290px; padding: 14px; margin: 0; color: #1c1e21; }
-  h1 { font-size: 14px; margin: 0 0 2px; }
-  .site { font-size: 11px; color: #888; margin-bottom: 12px; }
-  label { display: block; margin: 8px 0; }
-  input[type=number] { width: 60px; }
-  button { width: 100%; padding: 9px; margin-top: 10px; border: 0; border-radius: 6px;
-           color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; }
-  button:disabled { opacity: .55; cursor: default; }
-  #fb button { background: #1877f2; }
-  #wa button { background: #00a884; }
-  .hint { font-size: 11px; color: #777; margin-top: 4px; }
-  #status { margin-top: 10px; font-size: 12px; color: #444; min-height: 16px; white-space: pre-line; }
+  :root {
+    --navy: #2c3e57; --sea: #4a90d9; --fb: #1877f2; --wa: #00a884;
+    --ink: #1f2733; --muted: #7c8794; --line: #e7ebf0; --card: #ffffff; --bg: #f4f7fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    width: 320px; margin: 0; color: var(--ink); background: var(--bg);
+  }
+  .header {
+    display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+    background: linear-gradient(135deg, var(--navy) 0%, #3a5074 100%); color: #fff;
+  }
+  .header img { width: 34px; height: 34px; border-radius: 8px; flex: none; background: #fff; }
+  .header .title { font-size: 14px; font-weight: 700; letter-spacing: .2px; }
+  .header .ver { font-size: 10px; font-weight: 500; opacity: .65; }
+  .header .site { font-size: 11px; opacity: .85; margin-top: 1px; }
+  .wrap { padding: 14px 16px 16px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+
+  /* collapsible dropdowns */
+  details { border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-bottom: 12px; }
+  details > summary {
+    list-style: none; cursor: pointer; padding: 10px 12px; font-size: 12px;
+    font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px;
+    user-select: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: "▸"; color: var(--muted); font-size: 10px; transition: transform .15s;
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  details .body { padding: 0 12px 12px; font-size: 12px; color: #56606e; line-height: 1.5; }
+  .steps { margin: 0; padding-left: 16px; }
+  .steps li { margin: 4px 0; }
+
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+    padding: 2px 7px; border-radius: 20px; margin-bottom: 10px; text-transform: uppercase;
+  }
+  .badge.fb { background: rgba(24,119,242,.12); color: var(--fb); }
+  .badge.wa { background: rgba(0,168,132,.12); color: var(--wa); }
+
+  .field { margin: 11px 0; }
+  .field label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 5px; }
+  .field .sub { font-weight: 400; color: var(--muted); }
+  input[type=number], input[type=date], input[type=text], input[type=password] {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; font: inherit; color: var(--ink); background: #fff;
+  }
+  input[type=number] { width: 90px; }
+  input:focus { outline: none; border-color: var(--sea); box-shadow: 0 0 0 3px rgba(74,144,217,.15); }
+
+  button {
+    width: 100%; padding: 10px; margin-top: 8px; border: 0; border-radius: 9px;
+    color: #fff; font-weight: 600; font-size: 13px; cursor: pointer;
+    transition: filter .12s, transform .02s;
+  }
+  button:hover { filter: brightness(1.05); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: default; filter: none; }
+  .btn-primary.fb { background: var(--fb); }
+  .btn-primary.wa { background: var(--wa); }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row button { margin-top: 10px; }
+  .btn-ghost { background: #eef1f5; color: var(--ink); font-weight: 500; }
+  .btn-ghost:hover { filter: none; background: #e4e9ef; }
+  .btn-resume {
+    background: #fff3e0; color: var(--orange, #f0892f); border: 1.5px solid #f0892f;
+    font-weight: 700; margin-top: 8px;
+  }
+  .btn-resume:hover { filter: none; background: #ffe9cc; }
+  .backup-row { display: flex; gap: 6px; margin-top: 10px; }
+  .btn-mini {
+    flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 500;
+    background: #f0f2f5; color: #6b7684; border-radius: 7px; margin-top: 0;
+  }
+  .btn-mini:hover { filter: none; background: #e7eaef; }
+
+  /* saved-state box under the buttons */
+  .saved {
+    margin-top: 12px; padding: 10px 12px; border-radius: 9px;
+    background: #f0f5fb; border: 1px solid #dce8f5; font-size: 12px; color: #3a4656;
+  }
+  .saved .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .saved .lbl { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+  .saved .val { font-weight: 700; color: var(--ink); }
+  .saved .range { margin-top: 4px; font-size: 12px; color: #4a5562; }
+  .saved.empty { color: var(--muted); }
+
+  #status {
+    margin-top: 10px; font-size: 12px; color: #4a5562; min-height: 0;
+    white-space: pre-line; line-height: 1.4;
+  }
+  #status:not(:empty) {
+    background: #eef4fb; border: 1px solid #d9e7f6; border-radius: 8px; padding: 8px 10px;
+  }
   .hidden { display: none; }
-  #none { color: #555; }
-  ol { margin: 0 0 12px; padding-left: 18px; font-size: 11.5px; color: #555; }
-  ol li { margin: 3px 0; }
+
+  /* Supabase prominent banner */
+  .supa-banner {
+    background: linear-gradient(135deg, #1a2b45 0%, #24405f 100%);
+    color: #fff; border-radius: 11px; padding: 11px 13px; margin-bottom: 10px;
+  }
+  .supa-banner-top { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+  .supa-dot { width: 9px; height: 9px; border-radius: 50%; background: #6b7684; flex: none; }
+  .supa-dot.on { background: #3ddc84; box-shadow: 0 0 6px rgba(61,220,132,.7); }
+  .supa-dot.off { background: #e0a23d; }
+  .supa-state { margin-left: auto; font-size: 11px; font-weight: 600; opacity: .9; }
+  .supa-counts { display: flex; gap: 14px; margin-top: 7px; font-size: 11px; opacity: .92; }
+  .supa-counts b { font-size: 13px; }
+  .supa-counts .pending b { color: #ffd27a; }
+  .supa-range {
+    font-size: 11px; opacity: .92; margin-top: 6px; line-height: 1.5;
+  }
+  .supa-range b { font-weight: 700; }
+  .supa-syncbtn {
+    width: 100%; margin-top: 9px; padding: 7px; border: 0; border-radius: 7px;
+    background: rgba(255,255,255,.16); color: #fff; font-weight: 600; font-size: 12px;
+    cursor: pointer;
+  }
+  .supa-syncbtn:hover { background: rgba(255,255,255,.26); }
+  .supa-syncbtn:disabled { opacity: .55; cursor: default; }
 </style>
 </head>
 <body>
-  <h1>KP Rentals Exporter</h1>
-  <div class="site" id="siteLabel"></div>
+  <div class="header">
+    <img src="icon48.png" alt="">
+    <div>
+      <div class="title">KP Rentals Exporter <span class="ver" id="ver"></span></div>
+      <div class="site" id="siteLabel">Detecting page…</div>
+    </div>
+  </div>
 
-  <!-- Facebook mode -->
-  <section id="fb" class="hidden">
-    <ol>
-      <li>Open the group, scroll to the top.</li>
-      <li>Set a post limit and/or cutoff date below.</li>
-      <li>Click Grab - it scrolls &amp; collects on its own.</li>
-      <li>JSON is copied / downloaded when done.</li>
-    </ol>
-    <label>Stop after
-      <input type="number" id="maxposts" value="100" min="1" max="2000"> posts
-    </label>
-    <label>or when posts reach date:
-      <input type="date" id="cutoff">
-    </label>
-    <div class="hint">Stops at whichever comes first. Leave date blank for count only.</div>
-    <label><input type="checkbox" id="fbclip" checked> Copy JSON to clipboard</label>
-    <label><input type="checkbox" id="fbdl" checked> Download .json file</label>
-    <button id="fbgrab">Grab posts</button>
-  </section>
+  <div class="wrap">
 
-  <!-- WhatsApp mode -->
-  <section id="wa" class="hidden">
-    <ol>
-      <li>Open the group chat.</li>
-      <li>Click Start - a green panel appears on the page.</li>
-      <li>Scroll UP by hand as far back as you want (watch the live count).</li>
-      <li>Click STOP &amp; DOWNLOAD on that panel.</li>
-    </ol>
-    <button id="wagrab">Start grabbing</button>
-  </section>
+    <!-- Supabase: prominent status banner (the primary destination) -->
+    <div id="supaBanner" class="supa-banner">
+      <div class="supa-banner-top">
+        <span class="supa-dot" id="supaDot"></span>
+        <span id="supaBannerText">Supabase sync</span>
+        <span id="supaState" class="supa-state"></span>
+      </div>
+      <div class="supa-counts" id="supaCounts"></div>
+      <div class="supa-range" id="supaRange"></div>
+      <button id="supaSyncNow" class="supa-syncbtn">⤴ Sync now</button>
+    </div>
 
-  <!-- Neither site -->
-  <section id="none" class="hidden">
-    Open a <b>Facebook group</b> or <b>web.whatsapp.com</b> group chat, then click this extension.
-  </section>
+    <!-- Supabase credentials & controls (set once, remembered) -->
+    <details id="supaWrap">
+      <summary>⚙️ Supabase settings</summary>
+      <div class="body">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:10px">
+          <input type="checkbox" id="supaEnabled" checked style="width:auto"> Sync to Supabase
+        </label>
+        <div class="field">
+          <label>Project URL</label>
+          <input type="text" id="supaUrl" placeholder="https://xxxx.supabase.co" style="width:100%">
+        </div>
+        <div class="field">
+          <label>Anon key</label>
+          <input type="password" id="supaKey" placeholder="eyJ..." style="width:100%">
+        </div>
+        <div class="btn-row">
+          <button id="supaSave" class="btn-ghost">Save</button>
+          <button id="supaTest" class="btn-ghost">Test connection</button>
+        </div>
+        <div class="saved empty" id="supaStatus" style="margin-top:10px">Not configured.</div>
+      </div>
+    </details>
 
-  <div id="status"></div>
+    <!-- Facebook mode -->
+    <section id="fb" class="hidden">
+      <span class="badge fb">Facebook group</span>
+
+      <details>
+        <summary>How to use</summary>
+        <div class="body">
+          <ol class="steps">
+            <li>Open the group feed and scroll to the top.</li>
+            <li>Set a post limit and/or a stop date (optional).</li>
+            <li>Hit <b>Grab posts</b> — it scrolls and collects on its own.</li>
+            <li>Progress saves continuously — syncs to Supabase or download JSON when done.</li>
+          </ol>
+        </div>
+      </details>
+
+      <div class="card">
+        <div class="field">
+          <label>Stop after <span class="sub">(blank = no limit)</span></label>
+          <input type="number" id="maxposts" placeholder="e.g. 100" min="1" max="5000"> posts
+        </div>
+        <div class="field">
+          <label>Stop at date <span class="sub">(today → back to here)</span></label>
+          <input type="date" id="cutoff">
+        </div>
+
+        <details>
+          <summary>How these work</summary>
+          <div class="body">
+            Grabs from today backward to the stop date.
+            <ul style="margin:6px 0 0;padding-left:16px">
+              <li>Blank post count = no limit.</li>
+              <li>Both blank = the whole feed.</li>
+              <li>Recent and undated posts are always kept.</li>
+              <li>You can also press <b>Stop</b> on the page panel at any time.</li>
+            </ul>
+          </div>
+        </details>
+
+        <button id="fbgrab" class="btn-primary fb">Grab posts</button>
+
+        <div class="saved empty" id="fbsaved">No saved posts for this group yet.</div>
+        <button id="fbresume" class="btn-resume hidden">↻ Resume grabbing</button>
+
+        <div class="backup-row">
+          <button id="fbexport" class="btn-mini">⬇ JSON backup</button>
+          <button id="fbclear" class="btn-mini">Clear saved</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- WhatsApp mode -->
+    <section id="wa" class="hidden">
+      <span class="badge wa">WhatsApp Web</span>
+
+      <details>
+        <summary>How to use</summary>
+        <div class="body">
+          <ol class="steps">
+            <li>Open the group chat.</li>
+            <li>Set a message target and/or a stop date (optional).</li>
+            <li>Hit <b>Start grabbing</b>, then scroll <b>up</b> by hand.</li>
+            <li>Progress saves continuously — syncs to Supabase or download JSON when done.</li>
+          </ol>
+        </div>
+      </details>
+
+      <div class="card">
+        <div class="field">
+          <label>Stop after <span class="sub">(blank = no limit)</span></label>
+          <input type="number" id="wamax" placeholder="e.g. 200" min="1" max="20000"> messages
+        </div>
+        <div class="field">
+          <label>Stop at date <span class="sub">(today → back to here)</span></label>
+          <input type="date" id="wacutoff">
+        </div>
+
+        <details>
+          <summary>How these work</summary>
+          <div class="body">
+            You scroll up by hand; these act as targets.
+            <ul style="margin:6px 0 0;padding-left:16px">
+              <li>Blank message count = no limit.</li>
+              <li>Both blank = everything you scroll past.</li>
+              <li>Recent and undated messages are always kept.</li>
+              <li>The panel shows when a target is reached, so you know when to stop scrolling.</li>
+            </ul>
+          </div>
+        </details>
+
+        <button id="wagrab" class="btn-primary wa">Start grabbing</button>
+
+        <div class="saved empty" id="wasaved">No saved messages for this chat yet.</div>
+        <button id="waresume" class="btn-resume hidden">↻ Resume grabbing</button>
+
+        <div class="backup-row">
+          <button id="waexport" class="btn-mini">⬇ JSON backup</button>
+          <button id="waclear" class="btn-mini">Clear saved</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Neither site -->
+    <section id="none" class="hidden">
+      <div class="card">
+        Open a <b>Facebook group</b> or a <b>web.whatsapp.com</b> group chat, then click this extension to begin.
+      </div>
+    </section>
+
+
+    <div id="status"></div>
+  </div>
 
   <script src="popup.js"></script>
 </body>
