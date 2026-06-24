@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useListings } from "@/hooks/useListings";
 import { useFilters } from "@/hooks/useFilters";
+import { useCollections } from "@/hooks/useCollections";
 import { applyFilters, sortListings, countByArea } from "@/lib/filters";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { AreaMap } from "@/components/map/AreaMap";
@@ -11,7 +12,7 @@ import { ActiveChips } from "./ActiveChips";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-type View = "list" | "map";
+type View = "list" | "map" | "saved" | "removed";
 
 export function Dashboard() {
   const { listings, loading, error } = useListings();
@@ -19,10 +20,21 @@ export function Dashboard() {
   const [drawer, setDrawer] = useState(false);
   const [view, setView] = useState<View>("list");
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const results = useMemo(() => sortListings(applyFilters(listings, filters), filters.sort), [listings, filters]);
-  // counts per area reflect all OTHER active filters (area filter blanked), so the map
-  // stays informative even while areas are selected.
-  const areaCounts = useMemo(() => countByArea(applyFilters(listings, { ...filters, areas: [] })), [listings, filters]);
+  const { removed, saved, remove, restore, undoRemove, toggleSave } = useCollections();
+  const removedSet = useMemo(() => new Set(removed), [removed]);
+  const savedSet = useMemo(() => new Set(saved), [saved]);
+
+  // main list: filtered + sorted, with removed listings hidden
+  const visible = useMemo(
+    () => sortListings(applyFilters(listings, filters), filters.sort).filter((l) => !removedSet.has(l.id)),
+    [listings, filters, removedSet]);
+  // saved/removed collections (saved hides anything also removed)
+  const savedList = useMemo(() => listings.filter((l) => savedSet.has(l.id) && !removedSet.has(l.id)), [listings, savedSet, removedSet]);
+  const removedList = useMemo(() => listings.filter((l) => removedSet.has(l.id)), [listings, removedSet]);
+  // area counts reflect other active filters AND hide removed, matching the visible list.
+  const areaCounts = useMemo(
+    () => countByArea(applyFilters(listings, { ...filters, areas: [] }).filter((l) => !removedSet.has(l.id))),
+    [listings, filters, removedSet]);
   const toggleArea = (slug: string) =>
     setFilters({ ...filters, areas: filters.areas.includes(slug) ? filters.areas.filter((a) => a !== slug) : [...filters.areas, slug] });
 
@@ -34,6 +46,17 @@ export function Dashboard() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [drawer]);
+
+  // Cmd/Ctrl+Z undoes the last removal (ignored while typing in a field).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undoRemove(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [undoRemove]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -50,20 +73,43 @@ export function Dashboard() {
         <main>
           <div className="mb-3 flex items-center justify-between gap-3">
             <div role="tablist" aria-label="View" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: "var(--line)" }}>
-              {(["list", "map"] as const).map((v) => (
+              {([
+                { v: "list", label: "List" },
+                { v: "map", label: "Map" },
+                { v: "saved", label: `★ Saved (${savedList.length})` },
+                { v: "removed", label: `Removed (${removedList.length})` },
+              ] as const).map(({ v, label }) => (
                 <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
-                  className="px-3 py-1 text-sm capitalize"
-                  style={view === v ? { background: "var(--accent)", color: "var(--accent-ink)" } : { background: "var(--surface)" }}>{v}</button>
+                  className="px-3 py-1 text-sm"
+                  style={view === v ? { background: "var(--accent)", color: "var(--accent-ink)" } : { background: "var(--surface)" }}>{label}</button>
               ))}
             </div>
             {view === "list"
-              ? <SortBar count={results.length} sort={filters.sort} onSort={(s) => setFilters({ ...filters, sort: s })} />
-              : <span className="text-sm" style={{ color: "var(--muted)" }}>{results.length.toLocaleString()} listings</span>}
+              ? <SortBar count={visible.length} sort={filters.sort} onSort={(s) => setFilters({ ...filters, sort: s })} />
+              : <span className="text-sm" style={{ color: "var(--muted)" }}>
+                  {(view === "saved" ? savedList.length : view === "removed" ? removedList.length : visible.length).toLocaleString()} listings
+                </span>}
           </div>
-          <div className="mt-3"><ActiveChips filters={filters} setFilters={setFilters} /></div>
-          {view === "map"
-            ? <AreaMap counts={areaCounts} selected={filters.areas} onToggle={toggleArea} />
-            : loading ? <Skeleton /> : results.length === 0 ? <EmptyState onClear={reset} /> : <ListingGrid listings={results} />}
+
+          {(view === "list" || view === "map") && <div className="mt-3"><ActiveChips filters={filters} setFilters={setFilters} /></div>}
+
+          {view === "map" ? (
+            <AreaMap counts={areaCounts} selected={filters.areas} onToggle={toggleArea} />
+          ) : view === "saved" ? (
+            savedList.length === 0
+              ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No saved listings yet — tap ☆ Save on a card.</p>
+              : <ListingGrid listings={savedList} savedSet={savedSet} onSave={toggleSave} onRemove={remove} />
+          ) : view === "removed" ? (
+            removedList.length === 0
+              ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>Nothing removed. Use ✕ on a card to hide listings you’re not interested in.</p>
+              : <ListingGrid listings={removedList} onRestore={restore} />
+          ) : loading ? (
+            <Skeleton />
+          ) : visible.length === 0 ? (
+            <EmptyState onClear={reset} />
+          ) : (
+            <ListingGrid listings={visible} savedSet={savedSet} onSave={toggleSave} onRemove={remove} />
+          )}
         </main>
       </div>
 
