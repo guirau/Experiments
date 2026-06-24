@@ -27,16 +27,22 @@ async function pageAll<T>(fetchPage: (from: number, to: number) => Promise<T[]>)
 export async function fetchListings(): Promise<Listing[]> {
   const sb = client();
   const offers = await pageAll<Listing>(async (from, to) => {
+    // id tiebreaker makes the sort a TOTAL order so .range() pagination can't
+    // duplicate or skip rows that share a listed_at timestamp.
     const { data, error } = await sb.from("listings_parsed").select("*")
       .or("discard_reason.is.null,discard_reason.eq.for_sale")
-      .order("listed_at", { ascending: false }).range(from, to);
+      .order("listed_at", { ascending: false }).order("id", { ascending: true }).range(from, to);
     if (error) throw error;
     return (data ?? []) as Listing[];
   });
   const posts = await pageAll<PostLink>(async (from, to) => {
-    const { data, error } = await sb.from("fb_posts").select("id,link,url").range(from, to);
+    const { data, error } = await sb.from("fb_posts").select("id,link,url")
+      .order("id", { ascending: true }).range(from, to);
     if (error) throw error;
     return (data ?? []) as PostLink[];
   });
-  return mergeLinks(offers, posts);
+  // defensive dedup by id in case the backend ever returns a boundary repeat
+  const seen = new Set<string>();
+  const unique = offers.filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)));
+  return mergeLinks(unique, posts);
 }
