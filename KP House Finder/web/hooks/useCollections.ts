@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const REMOVED_KEY = "kp:removed";
 const SAVED_KEY = "kp:saved";
+const CONTACTED_KEY = "kp:contacted";
 
 function read(key: string): string[] {
   try {
@@ -18,6 +19,7 @@ function read(key: string): string[] {
 export function useCollections() {
   const [removed, setRemoved] = useState<string[]>([]);
   const [saved, setSaved] = useState<string[]>([]);
+  const [contacted, setContacted] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const undoStack = useRef<string[]>([]);
 
@@ -27,12 +29,14 @@ export function useCollections() {
     /* eslint-disable react-hooks/set-state-in-effect */
     setRemoved(read(REMOVED_KEY));
     setSaved(read(SAVED_KEY));
+    setContacted(read(CONTACTED_KEY));
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
   // persist only after hydration so the initial empty render can't clobber storage
   useEffect(() => { if (hydrated) localStorage.setItem(REMOVED_KEY, JSON.stringify(removed)); }, [removed, hydrated]);
   useEffect(() => { if (hydrated) localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); }, [saved, hydrated]);
+  useEffect(() => { if (hydrated) localStorage.setItem(CONTACTED_KEY, JSON.stringify(contacted)); }, [contacted, hydrated]);
 
   const remove = useCallback((id: string) => {
     setRemoved((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -53,5 +57,9 @@ export function useCollections() {
     setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }, []);
 
-  return { removed, saved, remove, restore, undoRemove, toggleSave };
+  const toggleContacted = useCallback((id: string) => {
+    setContacted((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  return { removed, saved, contacted, remove, restore, undoRemove, toggleSave, toggleContacted };
 }

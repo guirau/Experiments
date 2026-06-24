@@ -13,7 +13,7 @@ import { ActiveChips } from "./ActiveChips";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-type View = "list" | "map" | "saved" | "removed";
+type View = "list" | "map" | "saved" | "contacted" | "removed";
 
 export function Dashboard() {
   const { listings, loading, error, updateLocal } = useListings();
@@ -21,21 +21,23 @@ export function Dashboard() {
   const [drawer, setDrawer] = useState(false);
   const [view, setView] = useState<View>("list");
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const { removed, saved, remove, restore, undoRemove, toggleSave } = useCollections();
+  const { removed, saved, contacted, remove, restore, undoRemove, toggleSave, toggleContacted } = useCollections();
   const removedSet = useMemo(() => new Set(removed), [removed]);
   const savedSet = useMemo(() => new Set(saved), [saved]);
+  const contactedSet = useMemo(() => new Set(contacted), [contacted]);
 
-  // main list: filtered + sorted, with removed listings hidden
+  // main list: filtered + sorted, hiding removed (dismissed) and contacted (already actioned)
   const visible = useMemo(
-    () => sortListings(applyFilters(listings, filters), filters.sort).filter((l) => !removedSet.has(l.id)),
-    [listings, filters, removedSet]);
-  // saved/removed collections (saved hides anything also removed)
+    () => sortListings(applyFilters(listings, filters), filters.sort).filter((l) => !removedSet.has(l.id) && !contactedSet.has(l.id)),
+    [listings, filters, removedSet, contactedSet]);
+  // collections (removed takes precedence over the others)
   const savedList = useMemo(() => listings.filter((l) => savedSet.has(l.id) && !removedSet.has(l.id)), [listings, savedSet, removedSet]);
+  const contactedList = useMemo(() => listings.filter((l) => contactedSet.has(l.id) && !removedSet.has(l.id)), [listings, contactedSet, removedSet]);
   const removedList = useMemo(() => listings.filter((l) => removedSet.has(l.id)), [listings, removedSet]);
-  // area counts reflect other active filters AND hide removed, matching the visible list.
+  // area counts reflect other active filters AND match the visible list (hide removed + contacted).
   const areaCounts = useMemo(
-    () => countByArea(applyFilters(listings, { ...filters, areas: [] }).filter((l) => !removedSet.has(l.id))),
-    [listings, filters, removedSet]);
+    () => countByArea(applyFilters(listings, { ...filters, areas: [] }).filter((l) => !removedSet.has(l.id) && !contactedSet.has(l.id))),
+    [listings, filters, removedSet, contactedSet]);
   const toggleArea = (slug: string) =>
     setFilters({ ...filters, areas: filters.areas.includes(slug) ? filters.areas.filter((a) => a !== slug) : [...filters.areas, slug] });
 
@@ -85,6 +87,7 @@ export function Dashboard() {
                 { v: "list", label: "List" },
                 { v: "map", label: "Map" },
                 { v: "saved", label: `★ Saved (${savedList.length})` },
+                { v: "contacted", label: `✓ Contacted (${contactedList.length})` },
                 { v: "removed", label: `Removed (${removedList.length})` },
               ] as const).map(({ v, label }) => (
                 <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
@@ -95,7 +98,7 @@ export function Dashboard() {
             {view === "list"
               ? <SortBar count={visible.length} sort={filters.sort} onSort={(s) => setFilters({ ...filters, sort: s })} />
               : <span className="text-sm" style={{ color: "var(--muted)" }}>
-                  {(view === "saved" ? savedList.length : view === "removed" ? removedList.length : visible.length).toLocaleString()} listings
+                  {(view === "saved" ? savedList.length : view === "contacted" ? contactedList.length : view === "removed" ? removedList.length : visible.length).toLocaleString()} listings
                 </span>}
           </div>
 
@@ -106,7 +109,11 @@ export function Dashboard() {
           ) : view === "saved" ? (
             savedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No saved listings yet — tap ☆ Save on a card.</p>
-              : <ListingGrid listings={savedList} savedSet={savedSet} onSave={toggleSave} onRemove={remove} onEditPrice={handleEditPrice} />
+              : <ListingGrid listings={savedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
+          ) : view === "contacted" ? (
+            contactedList.length === 0
+              ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>No contacted listings yet — tap ✆ Contacted on a card.</p>
+              : <ListingGrid listings={contactedList} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
           ) : view === "removed" ? (
             removedList.length === 0
               ? <p className="rounded-2xl border p-10 text-center text-sm" style={{ borderColor: "var(--line)", color: "var(--muted)" }}>Nothing removed. Use ✕ on a card to hide listings you’re not interested in.</p>
@@ -116,7 +123,7 @@ export function Dashboard() {
           ) : visible.length === 0 ? (
             <EmptyState onClear={reset} />
           ) : (
-            <ListingGrid listings={visible} savedSet={savedSet} onSave={toggleSave} onRemove={remove} onEditPrice={handleEditPrice} />
+            <ListingGrid listings={visible} savedSet={savedSet} contactedSet={contactedSet} onSave={toggleSave} onContacted={toggleContacted} onRemove={remove} onEditPrice={handleEditPrice} />
           )}
         </main>
       </div>

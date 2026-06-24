@@ -20,13 +20,15 @@ const price = (l: Listing) => {
 export interface ListingCardProps {
   listing: Listing;
   saved?: boolean;
+  contacted?: boolean;
   onSave?: (id: string) => void;
+  onContacted?: (id: string) => void;
   onRemove?: (id: string) => void;
   onRestore?: (id: string) => void;
   onEditPrice?: (id: string, price: number | null) => Promise<void> | void;
 }
 
-export function ListingCard({ listing, saved = false, onSave, onRemove, onRestore, onEditPrice }: ListingCardProps) {
+export function ListingCard({ listing, saved = false, contacted = false, onSave, onContacted, onRemove, onRestore, onEditPrice }: ListingCardProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -89,6 +91,12 @@ export function ListingCard({ listing, saved = false, onSave, onRemove, onRestor
             <button onClick={() => onSave(listing.id)} aria-pressed={saved} title={saved ? "Remove from saved" : "Save to favourites"}
               className="rounded-full px-2 py-0.5" style={saved ? { color: "var(--accent)" } : { color: "var(--muted)" }}>
               {saved ? "★ Saved" : "☆ Save"}
+            </button>
+          )}
+          {onContacted && (
+            <button onClick={() => onContacted(listing.id)} aria-pressed={contacted} title={contacted ? "Mark as not contacted" : "Mark as contacted"}
+              className="rounded-full px-2 py-0.5" style={contacted ? { color: "var(--good)" } : { color: "var(--muted)" }}>
+              {contacted ? "✓ Contacted" : "✆ Contacted"}
             </button>
           )}
           {onRemove && (
