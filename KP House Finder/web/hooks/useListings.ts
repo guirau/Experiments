@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchOffers } from "@/lib/supabase";
+import { fetchListings } from "@/lib/supabase";
 import type { Listing } from "@/lib/types";
 
 export function useListings() {
@@ -9,7 +9,7 @@ export function useListings() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let on = true;
-    fetchOffers()
+    fetchListings()
       .then((rows) => on && setListings(rows))
       .catch((e) => on && setError(e instanceof Error ? e.message : String(e)))
       .finally(() => on && setLoading(false));

@@ -1,11 +1,14 @@
 import type { Listing, FilterState, BoolState, SortKey } from "./types";
 
 export function defaultFilters(): FilterState {
-  return { priceMin: null, priceMax: null, areas: [], propertyTypes: [], bedroomsMin: null,
-    bathroomsMin: null, yearRound: [], seasons: [], minStayMax: null, subletting: [],
-    depositMax: null, waterIncluded: [], internetIncluded: [], amenities: [],
+  return { listingType: ["rent"], priceMin: null, priceMax: null, areas: [], propertyTypes: [],
+    bedroomsMin: null, bathroomsMin: null, yearRound: [], seasons: [], minStayMax: null,
+    subletting: [], depositMax: null, waterIncluded: [], internetIncluded: [], amenities: [],
     confidences: [], languages: [], sort: "newest" };
 }
+
+// rent vs sale is encoded in discard_reason ("for_sale" => sale, null => rent).
+export const listingKind = (l: Listing): "rent" | "sale" => (l.discard_reason === "for_sale" ? "sale" : "rent");
 
 const geOrNull = (v: number | null, min: number | null) => min == null || v == null || v >= min;
 const leOrNull = (v: number | null, max: number | null) => max == null || v == null || v <= max;
@@ -18,6 +21,7 @@ const boolSet = (v: boolean | null, sel: BoolState[]) =>
 
 export function applyFilters(rows: Listing[], s: FilterState): Listing[] {
   return rows.filter((r) =>
+    (s.listingType.length === 0 || s.listingType.includes(listingKind(r))) &&
     leOrNull(r.price_thb, s.priceMax) && geOrNull(r.price_thb, s.priceMin) &&
     inSet(r.area_canonical, s.areas) && inSet(r.property_type, s.propertyTypes) &&
     geOrNull(r.bedrooms, s.bedroomsMin) && geOrNull(r.bathrooms, s.bathroomsMin) &&
@@ -65,6 +69,7 @@ export function filtersToParams(s: FilterState): URLSearchParams {
   const d = defaultFilters();
   const setNum = (k: string, v: number | null) => v != null && p.set(k, String(v));
   const setArr = (k: string, v: string[]) => v.length && p.set(k, CSV(v));
+  if (JSON.stringify(s.listingType) !== JSON.stringify(d.listingType)) setArr("deal", s.listingType);
   setNum("priceMin", s.priceMin); setNum("priceMax", s.priceMax);
   setArr("areas", s.areas); setArr("types", s.propertyTypes);
   setNum("bedsMin", s.bedroomsMin); setNum("bathsMin", s.bathroomsMin);
@@ -83,6 +88,7 @@ const unBool = (s: string | null): BoolState[] => unCSV(s).filter((x): x is Bool
 export function paramsToFilters(p: URLSearchParams): FilterState {
   const d = defaultFilters();
   return { ...d,
+    listingType: p.has("deal") ? unCSV(p.get("deal")) : d.listingType,
     priceMin: numOrNull(p.get("priceMin")), priceMax: numOrNull(p.get("priceMax")),
     areas: unCSV(p.get("areas")), propertyTypes: unCSV(p.get("types")),
     bedroomsMin: numOrNull(p.get("bedsMin")), bathroomsMin: numOrNull(p.get("bathsMin")),

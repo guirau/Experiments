@@ -92,6 +92,15 @@ describe("applyFilters", () => {
   });
 });
 
+describe("listingType (rent vs sale)", () => {
+  it("filters rent vs sale via discard_reason; empty = both", () => {
+    const rows = [L({}), L({ discard_reason: "for_sale" })]; // L() defaults discard_reason null = rent
+    expect(applyFilters(rows, f({ listingType: ["rent"] })).map((r) => r.discard_reason)).toEqual([null]);
+    expect(applyFilters(rows, f({ listingType: ["sale"] })).map((r) => r.discard_reason)).toEqual(["for_sale"]);
+    expect(applyFilters(rows, f({ listingType: [] }))).toHaveLength(2);
+  });
+});
+
 describe("countByArea", () => {
   it("groups by area_canonical and maps null -> unknown", () => {
     const rows = [L({ area_canonical: "srithanu" }), L({ area_canonical: "srithanu" }),
@@ -121,7 +130,7 @@ describe("sortListings", () => {
 
 describe("URL codec round-trip", () => {
   it("survives filters -> params -> filters for ALL fields", () => {
-    const state = f({ priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
+    const state = f({ listingType: ["sale"], priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
       propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: ["yes", "unknown"],
       seasons: ["full_year"], minStayMax: 6, subletting: ["no"], depositMax: 20000,
       waterIncluded: ["yes"], internetIncluded: ["no", "unknown"], amenities: ["has_pool", "has_wifi"],

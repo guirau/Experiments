@@ -6,6 +6,8 @@ import { Chip } from "@/components/ui/Chip";
 export function ActiveChips({ filters, setFilters }: { filters: FilterState; setFilters: (f: FilterState) => void }) {
   const d = defaultFilters();
   const chips: { label: string; clear: Partial<FilterState> }[] = [];
+  if (JSON.stringify(filters.listingType) !== JSON.stringify(d.listingType))
+    chips.push({ label: filters.listingType.length ? filters.listingType.join(" + ") : "rent + sale", clear: { listingType: d.listingType } });
   if (filters.priceMin != null) chips.push({ label: `≥ ฿${filters.priceMin}`, clear: { priceMin: null } });
   if (filters.priceMax != null) chips.push({ label: `≤ ฿${filters.priceMax}`, clear: { priceMax: null } });
   filters.areas.forEach((a) => chips.push({ label: areaName(a), clear: { areas: filters.areas.filter((x) => x !== a) } }));

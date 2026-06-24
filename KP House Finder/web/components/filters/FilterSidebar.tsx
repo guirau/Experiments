@@ -22,6 +22,8 @@ export function FilterSidebar({ filters, setFilters, onClear }:
         <button onClick={onClear} className="text-xs underline" style={{ color: "var(--muted)" }}>Clear all</button>
       </div>
       <Section>Core</Section>
+      <MultiSelect label="Listing" options={["rent", "sale"]} selected={filters.listingType}
+        onChange={(listingType) => set({ listingType })} render={(o) => (o === "sale" ? "For sale" : "For rent")} />
       <PriceRange min={filters.priceMin} max={filters.priceMax} onChange={(priceMin, priceMax) => set({ priceMin, priceMax })} />
       <MultiSelect label="Area" options={AREA_ENUM} selected={filters.areas} onChange={(areas) => set({ areas })} render={areaName} />
       <MultiSelect label="Type" options={PROPERTY_TYPES} selected={filters.propertyTypes} onChange={(propertyTypes) => set({ propertyTypes })} />

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { Listing } from "@/lib/types";
 import { areaName } from "@/lib/areas";
+import { listingKind } from "@/lib/filters";
 import { Badge } from "@/components/ui/Badge";
 import { ListingDetails } from "./ListingDetails";
 
@@ -11,7 +12,10 @@ function postHref(l: Listing): string | null {
   if (l.id?.startsWith("http")) return l.id;
   return null;
 }
-const price = (l: Listing) => (l.price_thb != null ? `฿${l.price_thb.toLocaleString()}/mo` : "Ask");
+const price = (l: Listing) => {
+  if (l.price_thb == null) return "Ask";
+  return listingKind(l) === "sale" ? `฿${l.price_thb.toLocaleString()}` : `฿${l.price_thb.toLocaleString()}/mo`;
+};
 
 export interface ListingCardProps {
   listing: Listing;
@@ -33,6 +37,7 @@ export function ListingCard({ listing, saved = false, onSave, onRemove, onRestor
       </div>
       <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>{specs || "—"}</p>
       <div className="mt-2 flex flex-wrap gap-1">
+        {listingKind(listing) === "sale" && <Badge>For sale</Badge>}
         {listing.year_round === true && <Badge tone="good">Year-round</Badge>}
         {listing.subletting_allowed === true && <Badge>Sublet OK</Badge>}
         {listing.season && listing.season !== "unknown" && <Badge tone="muted">{listing.season}</Badge>}

@@ -62,6 +62,7 @@ export interface Listing {
 export type SortKey = "newest" | "price_asc" | "price_desc" | "confidence";
 
 export interface FilterState {
+  listingType: string[]; // "rent" | "sale"; empty = both
   priceMin: number | null;
   priceMax: number | null;
   areas: string[];
