@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { areaName } from "@/lib/areas";
-import { AREA_POINTS, ISLAND_PATH, NON_MAP_AREAS } from "@/lib/areaGeo";
+import { AREA_POINTS, NON_MAP_AREAS } from "@/lib/areaGeo";
+import mapImg from "@/assets/map.png";
 
-function radius(count: number): number {
-  return 3 + Math.min(5, Math.sqrt(count)); // ~3 (empty) … ~8 (busy)
-}
+const MARKER = 34; // px — every marker is the same size
 
 export function AreaMap({ counts, selected, onToggle }:
   { counts: Record<string, number>; selected: string[]; onToggle: (slug: string) => void }) {
@@ -16,41 +16,43 @@ export function AreaMap({ counts, selected, onToggle }:
       <p className="mb-2 text-sm" style={{ color: "var(--muted)" }}>
         Koh Phangan areas — click to filter (multi-select). Numbers are matching listings.
       </p>
-      <svg viewBox="0 0 100 100" className="mx-auto block h-auto w-full max-w-xl" role="group" aria-label="Koh Phangan area map">
-        <path d={ISLAND_PATH} fill="var(--bg)" stroke="var(--line)" strokeWidth={0.6} />
+
+      <div className="relative mx-auto w-full max-w-2xl" style={{ aspectRatio: `${mapImg.width} / ${mapImg.height}` }}>
+        <Image src={mapImg} alt="Map of Koh Phangan" fill priority sizes="(max-width: 768px) 100vw, 700px"
+          className="rounded-xl object-contain" />
+
         {AREA_POINTS.map(({ slug, x, y }) => {
           const count = counts[slug] ?? 0;
           const isSel = selected.includes(slug);
           const isHover = hover === slug;
-          const r = radius(count);
           const name = areaName(slug);
           return (
-            <g key={slug} role="button" tabIndex={0} aria-pressed={isSel}
-              aria-label={`${name}: ${count} listings`}
-              style={{ cursor: "pointer" }}
+            <button key={slug} type="button" aria-pressed={isSel} aria-label={`${name}: ${count} listings`}
               onClick={() => onToggle(slug)}
               onMouseEnter={() => setHover(slug)} onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(slug)} onBlur={() => setHover(null)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(slug); } }}>
-              <title>{`${name}: ${count} listings`}</title>
-              <circle cx={x} cy={y} r={r}
-                fill={isSel ? "var(--accent)" : "var(--surface)"}
-                stroke={isSel ? "var(--accent)" : "var(--accent)"}
-                strokeWidth={isHover || isSel ? 1.1 : 0.7}
-                opacity={isHover && !isSel ? 0.9 : 1} />
-              <text x={x} y={y + r * 0.45} textAnchor="middle" fontSize={r * 0.95} fontWeight={700}
-                fill={isSel ? "var(--accent-ink)" : "var(--ink)"} style={{ pointerEvents: "none" }}>
-                {count}
-              </text>
-              <text x={x} y={y + r + 2.6} textAnchor="middle" fontSize={2.3}
-                fill={isHover || isSel ? "var(--ink)" : "var(--muted)"} fontWeight={isHover || isSel ? 600 : 400}
-                style={{ pointerEvents: "none" }}>
-                {name}
-              </text>
-            </g>
+              className="absolute flex items-center justify-center rounded-full border text-xs font-bold transition-transform"
+              style={{
+                left: `${x}%`, top: `${y}%`, width: MARKER, height: MARKER,
+                transform: `translate(-50%, -50%) scale(${isHover && !isSel ? 1.12 : 1})`,
+                background: isSel ? "var(--accent)" : "color-mix(in oklch, var(--surface) 88%, transparent)",
+                color: isSel ? "var(--accent-ink)" : "var(--ink)",
+                borderColor: "var(--accent)",
+                borderWidth: isSel || isHover ? 2 : 1,
+                boxShadow: "var(--shadow)",
+                zIndex: isHover || isSel ? 2 : 1,
+              }}>
+              {count}
+              {(isHover || isSel) && (
+                <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{ background: "var(--ink)", color: "var(--bg)" }}>
+                  {name}
+                </span>
+              )}
+            </button>
           );
         })}
-      </svg>
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <span className="text-xs" style={{ color: "var(--muted)" }}>No location:</span>
