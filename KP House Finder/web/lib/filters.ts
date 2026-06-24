@@ -11,8 +11,10 @@ const geOrNull = (v: number | null, min: number | null) => min == null || v == n
 const leOrNull = (v: number | null, max: number | null) => max == null || v == null || v <= max;
 const inSet = (v: string | null, set: string[]) => set.length === 0 || (v != null && set.includes(v));
 const boolState = (v: boolean | null): BoolState => (v === true ? "yes" : v === false ? "no" : "unknown");
-// empty set = no constraint; otherwise the listing's state (yes/no/unknown) must be selected
-const boolSet = (v: boolean | null, sel: BoolState[]) => sel.length === 0 || sel.includes(boolState(v));
+// empty (or non-array, e.g. stale dev state) = no constraint; otherwise the listing's
+// state (yes/no/unknown) must be selected
+const boolSet = (v: boolean | null, sel: BoolState[]) =>
+  !Array.isArray(sel) || sel.length === 0 || sel.includes(boolState(v));
 
 export function applyFilters(rows: Listing[], s: FilterState): Listing[] {
   return rows.filter((r) =>

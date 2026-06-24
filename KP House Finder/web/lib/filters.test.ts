@@ -60,6 +60,12 @@ describe("applyFilters", () => {
     expect(applyFilters(rows, f({ yearRound: [] }))).toHaveLength(3);
   });
 
+  it("non-array bool filter (stale state) degrades to no constraint, not hide-all", () => {
+    const rows = [L({ year_round: true }), L({ year_round: false }), L({ year_round: null })];
+    // simulate a stale value that isn't an array (e.g. old "any" string after HMR)
+    expect(applyFilters(rows, f({ yearRound: "any" as unknown as [] }))).toHaveLength(3);
+  });
+
   it("bedroomsMin keeps >= and keeps null", () => {
     const rows = [L({ bedrooms: 1 }), L({ bedrooms: 3 }), L({ bedrooms: null })];
     const out = applyFilters(rows, f({ bedroomsMin: 2 })).map(r => r.bedrooms);
