@@ -1,14 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Listing } from "./types";
 import { mergeLinks, type PostLink } from "./merge";
 
 const PAGE = 1000;
 
+let cached: SupabaseClient | null = null;
 function client() {
+  if (cached) return cached;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY in web/.env.local");
-  return createClient(url, key);
+  cached = createClient(url, key);
+  return cached;
 }
 
 async function pageAll<T>(fetchPage: (from: number, to: number) => Promise<T[]>): Promise<T[]> {
