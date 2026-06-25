@@ -72,6 +72,12 @@ describe("applyFilters", () => {
     expect(out.sort()).toEqual([3, null].sort());
   });
 
+  it("bedroomsMax keeps <= and keeps null", () => {
+    const rows = [L({ bedrooms: 1 }), L({ bedrooms: 3 }), L({ bedrooms: null })];
+    const out = applyFilters(rows, f({ bedroomsMax: 2 })).map(r => r.bedrooms);
+    expect(out.sort()).toEqual([1, null].sort());
+  });
+
   it("minStayMax keeps <= and keeps null", () => {
     const rows = [L({ min_stay_months: 2 }), L({ min_stay_months: 12 }), L({ min_stay_months: null })];
     const out = applyFilters(rows, f({ minStayMax: 6 })).map(r => r.min_stay_months);
@@ -146,7 +152,7 @@ describe("sortListings", () => {
 describe("URL codec round-trip", () => {
   it("survives filters -> params -> filters for ALL fields", () => {
     const state = f({ listingType: ["sale"], parsedWithin: "7", priceMin: 5000, priceMax: 15000, areas: ["srithanu", "ban_tai"],
-      propertyTypes: ["house", "villa"], bedroomsMin: 2, bathroomsMin: 1, yearRound: ["yes", "unknown"],
+      propertyTypes: ["house", "villa"], bedroomsMin: 2, bedroomsMax: 4, bathroomsMin: 1, yearRound: ["yes", "unknown"],
       seasons: ["full_year"], minStayMax: 6, subletting: ["no"], depositMax: 20000,
       waterIncluded: ["yes"], internetIncluded: ["no", "unknown"], amenities: ["has_pool", "has_wifi"],
       confidences: ["high", "medium"], languages: ["en"], sort: "price_asc" });

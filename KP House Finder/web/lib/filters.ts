@@ -2,7 +2,7 @@ import type { Listing, FilterState, BoolState, SortKey } from "./types";
 
 export function defaultFilters(): FilterState {
   return { listingType: ["rent"], parsedWithin: "", priceMin: null, priceMax: null, areas: [],
-    propertyTypes: [], bedroomsMin: null, bathroomsMin: null, yearRound: [], seasons: [],
+    propertyTypes: [], bedroomsMin: null, bedroomsMax: null, bathroomsMin: null, yearRound: [], seasons: [],
     minStayMax: null, subletting: [], depositMax: null, waterIncluded: [], internetIncluded: [],
     amenities: [], confidences: [], languages: [], sort: "newest" };
 }
@@ -32,7 +32,8 @@ export function applyFilters(rows: Listing[], s: FilterState, now: number = Date
     parsedWithinOk(r, s.parsedWithin, now) &&
     leOrNull(r.price_thb, s.priceMax) && geOrNull(r.price_thb, s.priceMin) &&
     inSet(r.area_canonical, s.areas) && inSet(r.property_type, s.propertyTypes) &&
-    geOrNull(r.bedrooms, s.bedroomsMin) && geOrNull(r.bathrooms, s.bathroomsMin) &&
+    geOrNull(r.bedrooms, s.bedroomsMin) && leOrNull(r.bedrooms, s.bedroomsMax) &&
+    geOrNull(r.bathrooms, s.bathroomsMin) &&
     boolSet(r.year_round, s.yearRound) && inSet(r.season, s.seasons) &&
     leOrNull(r.min_stay_months, s.minStayMax) && boolSet(r.subletting_allowed, s.subletting) &&
     leOrNull(r.deposit_thb, s.depositMax) && boolSet(r.water_included, s.waterIncluded) &&
@@ -82,7 +83,7 @@ export function filtersToParams(s: FilterState): URLSearchParams {
   if (s.parsedWithin) p.set("parsed", s.parsedWithin);
   setNum("priceMin", s.priceMin); setNum("priceMax", s.priceMax);
   setArr("areas", s.areas); setArr("types", s.propertyTypes);
-  setNum("bedsMin", s.bedroomsMin); setNum("bathsMin", s.bathroomsMin);
+  setNum("bedsMin", s.bedroomsMin); setNum("bedsMax", s.bedroomsMax); setNum("bathsMin", s.bathroomsMin);
   setArr("yearRound", s.yearRound); setArr("seasons", s.seasons);
   setNum("minStayMax", s.minStayMax); setArr("sublet", s.subletting);
   setNum("depositMax", s.depositMax); setArr("water", s.waterIncluded);
@@ -102,7 +103,7 @@ export function paramsToFilters(p: URLSearchParams): FilterState {
     parsedWithin: p.get("parsed") ?? d.parsedWithin,
     priceMin: numOrNull(p.get("priceMin")), priceMax: numOrNull(p.get("priceMax")),
     areas: unCSV(p.get("areas")), propertyTypes: unCSV(p.get("types")),
-    bedroomsMin: numOrNull(p.get("bedsMin")), bathroomsMin: numOrNull(p.get("bathsMin")),
+    bedroomsMin: numOrNull(p.get("bedsMin")), bedroomsMax: numOrNull(p.get("bedsMax")), bathroomsMin: numOrNull(p.get("bathsMin")),
     yearRound: unBool(p.get("yearRound")), seasons: unCSV(p.get("seasons")),
     minStayMax: numOrNull(p.get("minStayMax")), subletting: unBool(p.get("sublet")),
     depositMax: numOrNull(p.get("depositMax")), waterIncluded: unBool(p.get("water")),

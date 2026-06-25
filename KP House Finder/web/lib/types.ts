@@ -70,6 +70,7 @@ export interface FilterState {
   areas: string[];
   propertyTypes: string[];
   bedroomsMin: number | null;
+  bedroomsMax: number | null;
   bathroomsMin: number | null;
   yearRound: BoolState[];
   seasons: string[];

@@ -37,6 +37,7 @@ export function FilterSidebar({ filters, setFilters, onClear }:
       <MultiSelect label="Area" options={AREA_ENUM} selected={filters.areas} onChange={(areas) => set({ areas })} render={areaName} />
       <MultiSelect label="Type" options={PROPERTY_TYPES} selected={filters.propertyTypes} onChange={(propertyTypes) => set({ propertyTypes })} />
       <NumberMax label="Min bedrooms" value={filters.bedroomsMin} onChange={(bedroomsMin) => set({ bedroomsMin })} />
+      <NumberMax label="Max bedrooms" value={filters.bedroomsMax} onChange={(bedroomsMax) => set({ bedroomsMax })} />
       <NumberMax label="Min bathrooms" value={filters.bathroomsMin} onChange={(bathroomsMin) => set({ bathroomsMin })} />
       <Section>Long-term rental</Section>
       <BoolFilter label="Year-round" value={filters.yearRound} onChange={(yearRound) => set({ yearRound })} />
