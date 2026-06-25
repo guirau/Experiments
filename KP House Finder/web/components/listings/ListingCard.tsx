@@ -16,6 +16,10 @@ const price = (l: Listing) => {
   return listingKind(l) === "sale" ? `฿${l.price_thb.toLocaleString()}` : `฿${l.price_thb.toLocaleString()}/mo`;
 };
 
+// Copied to the clipboard whenever a listing's Facebook post is opened, ready to paste.
+const FB_MESSAGE = "Hey , is this house still available? Thanks :)";
+const copyMessage = () => { navigator.clipboard?.writeText(FB_MESSAGE).catch(() => {}); };
+
 export interface ListingCardProps {
   listing: Listing;
   saved?: boolean;
@@ -53,7 +57,7 @@ export function ListingCard({ listing, saved = false, contacted = false, onSave,
   };
 
   return (
-    <article onClick={() => { if (href) window.open(href, "_blank", "noopener,noreferrer"); }}
+    <article onClick={() => { if (href) { copyMessage(); window.open(href, "_blank", "noopener,noreferrer"); } }}
       title={href ? "Open the Facebook post" : undefined}
       style={{ borderColor: "var(--line)", background: "var(--surface)", cursor: href ? "pointer" : "default" }}
       className="rounded-2xl border p-4 transition-shadow hover:shadow-[var(--shadow)]">
@@ -85,7 +89,7 @@ export function ListingCard({ listing, saved = false, contacted = false, onSave,
       <div className="mt-3 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {onOpen && <button onClick={(e) => { stop(e); onOpen(listing); }} className="card-btn">Details</button>}
-          {href && <a href={href} onClick={stop} target="_blank" rel="noreferrer" className="card-btn">View on FB ↗</a>}
+          {href && <a href={href} onClick={(e) => { stop(e); copyMessage(); }} target="_blank" rel="noreferrer" className="card-btn">View on FB ↗</a>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onSave && (
