@@ -82,31 +82,29 @@ export function ListingCard({ listing, saved = false, contacted = false, onSave,
         {listing.parse_confidence && <Badge tone="muted">{listing.parse_confidence}</Badge>}
       </div>
 
-      <div className="mt-3 flex flex-col gap-2 text-sm">
-        <div className="flex items-center gap-4">
-          {onOpen && <button onClick={(e) => { stop(e); onOpen(listing); }} className="underline" style={{ color: "var(--accent)" }}>Details</button>}
-          {href && <a href={href} onClick={stop} target="_blank" rel="noreferrer" className="underline" style={{ color: "var(--accent)" }}>View on FB ↗</a>}
+      <div className="mt-3 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpen && <button onClick={(e) => { stop(e); onOpen(listing); }} className="card-btn">Details</button>}
+          {href && <a href={href} onClick={stop} target="_blank" rel="noreferrer" className="card-btn">View on FB ↗</a>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onSave && (
             <button onClick={(e) => { stop(e); onSave(listing.id); }} aria-pressed={saved} title={saved ? "Remove from saved" : "Save to favourites"}
-              className="rounded-full px-2 py-0.5" style={saved ? { color: "var(--accent)" } : { color: "var(--muted)" }}>
+              className={`card-btn${saved ? " card-btn-on" : ""}`}>
               {saved ? "★ Saved" : "☆ Save"}
             </button>
           )}
           {onContacted && (
             <button onClick={(e) => { stop(e); onContacted(listing.id); }} aria-pressed={contacted} title={contacted ? "Mark as not contacted" : "Mark as contacted"}
-              className="rounded-full px-2 py-0.5" style={contacted ? { color: "var(--good)" } : { color: "var(--muted)" }}>
+              className={`card-btn${contacted ? " card-btn-good" : ""}`}>
               {contacted ? "✓ Contacted" : "✆ Contacted"}
             </button>
           )}
           {onRemove && (
-            <button onClick={(e) => { stop(e); onRemove(listing.id); }} aria-label="Remove listing" title="Not interested (remove)"
-              className="rounded-full px-2 py-0.5" style={{ color: "var(--muted)" }}>✕ Remove</button>
+            <button onClick={(e) => { stop(e); onRemove(listing.id); }} aria-label="Remove listing" title="Not interested (remove)" className="card-btn">✕ Remove</button>
           )}
           {onRestore && (
-            <button onClick={(e) => { stop(e); onRestore(listing.id); }} title="Restore to listings"
-              className="rounded-full px-2 py-0.5 underline" style={{ color: "var(--accent)" }}>↩ Restore</button>
+            <button onClick={(e) => { stop(e); onRestore(listing.id); }} title="Restore to listings" className="card-btn">↩ Restore</button>
           )}
         </div>
       </div>

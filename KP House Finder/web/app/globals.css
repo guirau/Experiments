@@ -18,3 +18,36 @@ html, body { background: var(--bg); color: var(--ink); }
 body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 a { color: inherit; }
 *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Card action buttons: real button look with hover shading + click feedback. */
+.card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.2;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease, border-color 120ms ease, transform 70ms ease, box-shadow 120ms ease;
+}
+.card-btn:hover {
+  background: color-mix(in oklch, var(--ink) 7%, var(--surface));
+  border-color: var(--muted);
+}
+.card-btn:active {
+  transform: translateY(1px);
+  background: color-mix(in oklch, var(--ink) 13%, var(--surface));
+  box-shadow: inset 0 1px 2px oklch(25% 0.02 250 / 0.12);
+}
+.card-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+/* toggled-on states (Saved / Contacted) */
+.card-btn-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.card-btn-on:hover { background: color-mix(in oklch, var(--accent) 86%, black); border-color: color-mix(in oklch, var(--accent) 86%, black); }
+.card-btn-good { background: var(--good); border-color: var(--good); color: var(--accent-ink); }
+.card-btn-good:hover { background: color-mix(in oklch, var(--good) 86%, black); border-color: color-mix(in oklch, var(--good) 86%, black); }
