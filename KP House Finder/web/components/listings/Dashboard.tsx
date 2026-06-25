@@ -29,18 +29,24 @@ export function Dashboard() {
   const savedSet = useMemo(() => new Set(saved), [saved]);
   const contactedSet = useMemo(() => new Set(contacted), [contacted]);
 
-  // main list: filtered + sorted, hiding removed (dismissed) and contacted (already actioned)
+  // a listing leaves the main List once it's saved, contacted, or removed (it then lives
+  // only in its respective tab until that action is toggled off).
+  const collected = (id: string) => removedSet.has(id) || contactedSet.has(id) || savedSet.has(id);
+
+  // main list: filtered + sorted, excluding anything that's been saved/contacted/removed
   const visible = useMemo(
-    () => sortListings(applyFilters(listings, filters), filters.sort).filter((l) => !removedSet.has(l.id) && !contactedSet.has(l.id)),
-    [listings, filters, removedSet, contactedSet]);
+    () => sortListings(applyFilters(listings, filters), filters.sort).filter((l) => !collected(l.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [listings, filters, removedSet, contactedSet, savedSet]);
   // collections (removed takes precedence over the others)
   const savedList = useMemo(() => listings.filter((l) => savedSet.has(l.id) && !removedSet.has(l.id)), [listings, savedSet, removedSet]);
   const contactedList = useMemo(() => listings.filter((l) => contactedSet.has(l.id) && !removedSet.has(l.id)), [listings, contactedSet, removedSet]);
   const removedList = useMemo(() => listings.filter((l) => removedSet.has(l.id)), [listings, removedSet]);
-  // area counts reflect other active filters AND match the visible list (hide removed + contacted).
+  // area counts match the visible list (exclude saved/contacted/removed).
   const areaCounts = useMemo(
-    () => countByArea(applyFilters(listings, { ...filters, areas: [] }).filter((l) => !removedSet.has(l.id) && !contactedSet.has(l.id))),
-    [listings, filters, removedSet, contactedSet]);
+    () => countByArea(applyFilters(listings, { ...filters, areas: [] }).filter((l) => !collected(l.id))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [listings, filters, removedSet, contactedSet, savedSet]);
   const toggleArea = (slug: string) =>
     setFilters({ ...filters, areas: filters.areas.includes(slug) ? filters.areas.filter((a) => a !== slug) : [...filters.areas, slug] });
 
