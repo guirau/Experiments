@@ -53,7 +53,9 @@ export function ListingCard({ listing, saved = false, contacted = false, onSave,
   };
 
   return (
-    <article onClick={() => onOpen?.(listing)} style={{ borderColor: "var(--line)", background: "var(--surface)", cursor: onOpen ? "pointer" : "default" }}
+    <article onClick={() => { if (href) window.open(href, "_blank", "noopener,noreferrer"); }}
+      title={href ? "Open the Facebook post" : undefined}
+      style={{ borderColor: "var(--line)", background: "var(--surface)", cursor: href ? "pointer" : "default" }}
       className="rounded-2xl border p-4 transition-shadow hover:shadow-[var(--shadow)]">
       <div className="flex items-baseline justify-between gap-2">
         {editing ? (
