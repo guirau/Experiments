@@ -62,6 +62,18 @@ export interface Listing {
 
 export type SortKey = "newest" | "recent" | "price_asc" | "price_desc" | "confidence";
 
+// A row in the personal "Tracker" table (separate Supabase table, manual entry).
+export interface TrackerRow {
+  id: string;
+  listing_url: string | null;
+  person_name: string | null;
+  location_url: string | null;
+  visit_date: string | null;    // YYYY-MM-DD
+  contact: string | null;
+  notify_before: string | null; // YYYY-MM-DD
+  notes: string | null;
+}
+
 export interface FilterState {
   listingType: string[]; // "rent" | "sale"; empty = both
   parsedWithin: string;  // "" = any; else number of days ("1"|"3"|"7"|"30")

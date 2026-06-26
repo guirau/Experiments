@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Listing } from "./types";
+import type { Listing, TrackerRow } from "./types";
 import { mergeLinks, type PostLink } from "./merge";
 
 const PAGE = 1000;
@@ -58,3 +58,30 @@ export async function updateListing(id: string, patch: Record<string, unknown>):
 }
 
 export const updatePrice = (id: string, price: number | null) => updateListing(id, { price_thb: price });
+
+// ---- Tracker (separate table) ----
+export async function fetchTracker(): Promise<TrackerRow[]> {
+  const sb = client();
+  const { data, error } = await sb.from("tracker").select("*").order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as TrackerRow[];
+}
+
+const emptyToNull = (r: TrackerRow): TrackerRow => {
+  const out: Record<string, unknown> = { ...r };
+  for (const k of Object.keys(out)) if (out[k] === "") out[k] = null;
+  return out as unknown as TrackerRow;
+};
+
+// Bulk sync: delete removed rows, then upsert the current rows (keyed on id).
+export async function saveTracker(rows: TrackerRow[], deletedIds: string[]): Promise<void> {
+  const sb = client();
+  if (deletedIds.length) {
+    const { error } = await sb.from("tracker").delete().in("id", deletedIds);
+    if (error) throw error;
+  }
+  if (rows.length) {
+    const { error } = await sb.from("tracker").upsert(rows.map(emptyToNull), { onConflict: "id" });
+    if (error) throw error;
+  }
+}
