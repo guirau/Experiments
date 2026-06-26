@@ -67,6 +67,7 @@ export interface TrackerRow {
   id: string;
   listing_url: string | null;
   person_name: string | null;
+  price: number | null;
   location_url: string | null;
   visit_date: string | null;    // YYYY-MM-DD
   contact: string | null;

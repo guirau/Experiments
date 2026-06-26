@@ -7,6 +7,7 @@ create table if not exists tracker (
   id            uuid primary key default gen_random_uuid(),
   listing_url   text,           -- link to the listing (FB post or any URL)
   person_name   text,           -- who the listing belongs to
+  price         integer,        -- price in THB
   location_url  text,           -- Google Maps link
   visit_date    date,           -- planned visit date
   contact       text,           -- WhatsApp / Facebook contact
@@ -14,6 +15,9 @@ create table if not exists tracker (
   notes         text,
   created_at    timestamptz not null default now()
 );
+
+-- If you created this table BEFORE the `price` column existed, run ONLY this line:
+alter table tracker add column if not exists price integer;
 
 -- STEP 2
 alter table tracker enable row level security;

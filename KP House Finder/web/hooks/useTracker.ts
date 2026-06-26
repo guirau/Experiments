@@ -4,7 +4,7 @@ import type { TrackerRow } from "@/lib/types";
 import { fetchTracker, saveTracker } from "@/lib/supabase";
 
 const blank = (): TrackerRow => ({
-  id: crypto.randomUUID(), listing_url: "", person_name: "", location_url: "",
+  id: crypto.randomUUID(), listing_url: "", person_name: "", price: null, location_url: "",
   visit_date: "", contact: "", notify_before: "", notes: "",
 });
 
