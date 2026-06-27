@@ -62,9 +62,13 @@ export const updatePrice = (id: string, price: number | null) => updateListing(i
 // ---- Tracker (separate table) ----
 export async function fetchTracker(): Promise<TrackerRow[]> {
   const sb = client();
+  // order by created_at server-side; sort by sort_order client-side so the load stays
+  // resilient even before the sort_order column migration (stable -> created_at fallback).
   const { data, error } = await sb.from("tracker").select("*").order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as TrackerRow[];
+  const out = (data ?? []) as TrackerRow[];
+  out.sort((a, b) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity));
+  return out;
 }
 
 const emptyToNull = (r: TrackerRow): TrackerRow => {

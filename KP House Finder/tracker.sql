@@ -13,11 +13,15 @@ create table if not exists tracker (
   contact       text,           -- WhatsApp / Facebook contact
   notify_before date,           -- deadline to tell the person your decision
   notes         text,
+  crossed_off   boolean default false,  -- soft cross-off (kept in DB, just faded in the UI)
+  sort_order    integer,                -- manual row order (drag-and-drop)
   created_at    timestamptz not null default now()
 );
 
--- If you created this table BEFORE the `price` column existed, run ONLY this line:
+-- If you created this table earlier, run ONLY the matching lines to add new columns:
 alter table tracker add column if not exists price integer;
+alter table tracker add column if not exists crossed_off boolean default false;
+alter table tracker add column if not exists sort_order integer;
 
 -- STEP 2
 alter table tracker enable row level security;

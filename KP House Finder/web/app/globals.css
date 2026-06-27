@@ -51,3 +51,7 @@ a { color: inherit; }
 .card-btn-on:hover { background: color-mix(in oklch, var(--accent) 86%, black); border-color: color-mix(in oklch, var(--accent) 86%, black); }
 .card-btn-good { background: var(--good); border-color: var(--good); color: var(--accent-ink); }
 .card-btn-good:hover { background: color-mix(in oklch, var(--good) 86%, black); border-color: color-mix(in oklch, var(--good) 86%, black); }
+
+/* Tracker row crossed off: faded + struck through, but kept in the table/DB. */
+.tracker-crossed { opacity: 0.5; }
+.tracker-crossed input { text-decoration: line-through; color: var(--muted); }

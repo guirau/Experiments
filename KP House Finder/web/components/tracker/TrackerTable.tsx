@@ -1,4 +1,5 @@
 "use client";
+import { useRef, useState } from "react";
 import type { useTracker } from "@/hooks/useTracker";
 
 const inputCls = "w-full rounded border px-2 py-1 text-xs";
@@ -19,8 +20,10 @@ function UrlCell({ value, placeholder, onChange }: { value: string; placeholder:
 }
 
 export function TrackerTable({ tracker }: { tracker: ReturnType<typeof useTracker> }) {
-  const { rows, loading, error, saving, dirty, addRow, updateRow, removeRow, save } = tracker;
+  const { rows, loading, error, saving, dirty, addRow, updateRow, removeRow, toggleCrossed, moveRow, save } = tracker;
   const today = todayStr();
+  const dragId = useRef<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   if (loading) return <p className="p-6 text-sm" style={{ color: "var(--muted)" }}>Loading tracker…</p>;
 
@@ -48,8 +51,15 @@ export function TrackerTable({ tracker }: { tracker: ReturnType<typeof useTracke
             )}
             {rows.map((r) => {
               const overdue = !!r.notify_before && r.notify_before <= today;
+              const crossed = !!r.crossed_off;
+              const dropTarget = dragOverId === r.id;
               return (
-                <tr key={r.id} className="border-t align-top" style={{ borderColor: "var(--line)" }}>
+                <tr key={r.id}
+                  onDragOver={(e) => { e.preventDefault(); if (dragOverId !== r.id) setDragOverId(r.id); }}
+                  onDragLeave={() => setDragOverId((cur) => (cur === r.id ? null : cur))}
+                  onDrop={(e) => { e.preventDefault(); if (dragId.current) moveRow(dragId.current, r.id); dragId.current = null; setDragOverId(null); }}
+                  className={`align-top${crossed ? " tracker-crossed" : ""}`}
+                  style={{ borderTop: `${dropTarget ? 2 : 1}px solid ${dropTarget ? "var(--accent)" : "var(--line)"}` }}>
                   <td className="p-1" style={{ minWidth: 170 }}><UrlCell value={r.listing_url ?? ""} placeholder="https://…" onChange={(v) => updateRow(r.id, { listing_url: v })} /></td>
                   <td className="p-1" style={{ minWidth: 120 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.person_name ?? ""} onChange={(e) => updateRow(r.id, { person_name: e.target.value })} /></td>
                   <td className="p-1" style={{ minWidth: 100 }}><input type="number" inputMode="numeric" className={inputCls} style={{ borderColor: "var(--line)" }} placeholder="฿" value={r.price != null ? String(r.price) : ""} onChange={(e) => updateRow(r.id, { price: e.target.value === "" ? null : Math.round(Number(e.target.value)) })} /></td>
@@ -62,7 +72,14 @@ export function TrackerTable({ tracker }: { tracker: ReturnType<typeof useTracke
                       style={overdue ? { borderColor: "var(--warn)", background: "color-mix(in oklch, var(--warn) 20%, transparent)" } : { borderColor: "var(--line)" }} />
                   </td>
                   <td className="p-1" style={{ minWidth: 220 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.notes ?? ""} onChange={(e) => updateRow(r.id, { notes: e.target.value })} /></td>
-                  <td className="p-1"><button onClick={() => removeRow(r.id)} aria-label="Delete row" title="Delete row" className="card-btn">✕</button></td>
+                  <td className="p-1">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => removeRow(r.id)} aria-label="Delete row" title="Delete row (from database)" className="card-btn">✕</button>
+                      <button onClick={() => toggleCrossed(r.id)} aria-pressed={crossed} title={crossed ? "Un-cross" : "Cross off (keep in database)"} className={`card-btn${crossed ? " card-btn-on" : ""}`}>~</button>
+                      <span draggable onDragStart={() => { dragId.current = r.id; }} onDragEnd={() => { dragId.current = null; setDragOverId(null); }}
+                        role="button" tabIndex={0} aria-label="Drag to reorder" title="Drag to reorder" className="card-btn" style={{ cursor: "grab" }}>⠿</span>
+                    </div>
+                  </td>
                 </tr>
               );
             })}

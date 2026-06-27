@@ -73,6 +73,8 @@ export interface TrackerRow {
   contact: string | null;
   notify_before: string | null; // YYYY-MM-DD
   notes: string | null;
+  crossed_off: boolean | null;
+  sort_order: number | null;
 }
 
 export interface FilterState {
