@@ -87,7 +87,7 @@ export function Dashboard() {
   }, [undoRemove]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <div className={`mx-auto px-4 py-6 ${view === "tracker" ? "max-w-none" : "max-w-7xl"}`}>
       <header className="sticky top-0 z-10 -mx-4 mb-4 flex items-center justify-between border-b px-4 py-3 backdrop-blur" style={{ borderColor: "var(--line)", background: "color-mix(in oklch, var(--bg) 80%, transparent)" }}>
         <h1 className="text-lg font-bold tracking-tight">KP House Finder</h1>
         <button className="rounded-full border px-3 py-1 text-sm lg:hidden" style={{ borderColor: "var(--line)" }} onClick={() => setDrawer(true)}>Filters</button>

@@ -33,11 +33,11 @@ export function TrackerTable({ tracker }: { tracker: ReturnType<typeof useTracke
         <button onClick={addRow} className="card-btn">+ Add row</button>
         <button onClick={save} disabled={saving || !dirty} className={`card-btn${dirty ? " card-btn-on" : ""}`}>{saving ? "Saving…" : "Save"}</button>
         {dirty && !error && <span className="text-xs" style={{ color: "var(--muted)" }}>unsaved changes</span>}
-        {error && <span className="text-xs" style={{ color: "var(--warn)" }}>Couldn’t save: {error} — is the `tracker` table created?</span>}
+        {error && <span className="text-xs" style={{ color: "var(--warn)" }}>Couldn’t save: {error}{/column/i.test(error) ? " — run the pending ALTERs in tracker.sql" : ""}</span>}
       </div>
 
       <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: "var(--line)" }}>
-        <table className="w-full border-collapse text-xs" style={{ minWidth: "980px" }}>
+        <table className="w-full border-collapse text-xs">
           <thead>
             <tr style={{ background: "var(--bg)" }}>
               {["Listing", "Name", "Price", "Location", "Date", "Contact", "Notify before", "Notes", ""].map((c, i) => (
@@ -60,18 +60,18 @@ export function TrackerTable({ tracker }: { tracker: ReturnType<typeof useTracke
                   onDrop={(e) => { e.preventDefault(); if (dragId.current) moveRow(dragId.current, r.id); dragId.current = null; setDragOverId(null); }}
                   className={`align-top${crossed ? " tracker-crossed" : ""}`}
                   style={{ borderTop: `${dropTarget ? 2 : 1}px solid ${dropTarget ? "var(--accent)" : "var(--line)"}` }}>
-                  <td className="p-1" style={{ minWidth: 170 }}><UrlCell value={r.listing_url ?? ""} placeholder="https://…" onChange={(v) => updateRow(r.id, { listing_url: v })} /></td>
-                  <td className="p-1" style={{ minWidth: 120 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.person_name ?? ""} onChange={(e) => updateRow(r.id, { person_name: e.target.value })} /></td>
-                  <td className="p-1" style={{ minWidth: 100 }}><input type="number" inputMode="numeric" className={inputCls} style={{ borderColor: "var(--line)" }} placeholder="฿" value={r.price != null ? String(r.price) : ""} onChange={(e) => updateRow(r.id, { price: e.target.value === "" ? null : Math.round(Number(e.target.value)) })} /></td>
-                  <td className="p-1" style={{ minWidth: 170 }}><UrlCell value={r.location_url ?? ""} placeholder="Google Maps link" onChange={(v) => updateRow(r.id, { location_url: v })} /></td>
-                  <td className="p-1" style={{ minWidth: 140 }}><input type="date" className={inputCls} style={{ borderColor: "var(--line)" }} value={r.visit_date ?? ""} onChange={(e) => updateRow(r.id, { visit_date: e.target.value })} /></td>
-                  <td className="p-1" style={{ minWidth: 130 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.contact ?? ""} onChange={(e) => updateRow(r.id, { contact: e.target.value })} /></td>
-                  <td className="p-1" style={{ minWidth: 140 }}>
+                  <td className="p-1" style={{ minWidth: 150 }}><UrlCell value={r.listing_url ?? ""} placeholder="https://…" onChange={(v) => updateRow(r.id, { listing_url: v })} /></td>
+                  <td className="p-1" style={{ minWidth: 110 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.person_name ?? ""} onChange={(e) => updateRow(r.id, { person_name: e.target.value })} /></td>
+                  <td className="p-1" style={{ minWidth: 80 }}><input type="number" inputMode="numeric" className={inputCls} style={{ borderColor: "var(--line)" }} placeholder="฿" value={r.price != null ? String(r.price) : ""} onChange={(e) => updateRow(r.id, { price: e.target.value === "" ? null : Math.round(Number(e.target.value)) })} /></td>
+                  <td className="p-1" style={{ minWidth: 150 }}><UrlCell value={r.location_url ?? ""} placeholder="Google Maps link" onChange={(v) => updateRow(r.id, { location_url: v })} /></td>
+                  <td className="p-1" style={{ minWidth: 120 }}><input type="date" className={inputCls} style={{ borderColor: "var(--line)" }} value={r.visit_date ?? ""} onChange={(e) => updateRow(r.id, { visit_date: e.target.value })} /></td>
+                  <td className="p-1" style={{ minWidth: 115 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.contact ?? ""} onChange={(e) => updateRow(r.id, { contact: e.target.value })} /></td>
+                  <td className="p-1" style={{ minWidth: 120 }}>
                     <input type="date" className={inputCls} value={r.notify_before ?? ""} title={overdue ? "Overdue" : undefined}
                       onChange={(e) => updateRow(r.id, { notify_before: e.target.value })}
                       style={overdue ? { borderColor: "var(--warn)", background: "color-mix(in oklch, var(--warn) 20%, transparent)" } : { borderColor: "var(--line)" }} />
                   </td>
-                  <td className="p-1" style={{ minWidth: 220 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.notes ?? ""} onChange={(e) => updateRow(r.id, { notes: e.target.value })} /></td>
+                  <td className="p-1" style={{ minWidth: 160 }}><input className={inputCls} style={{ borderColor: "var(--line)" }} value={r.notes ?? ""} onChange={(e) => updateRow(r.id, { notes: e.target.value })} /></td>
                   <td className="p-1">
                     <div className="flex items-center gap-1">
                       <button onClick={() => removeRow(r.id)} aria-label="Delete row" title="Delete row (from database)" className="card-btn">✕</button>

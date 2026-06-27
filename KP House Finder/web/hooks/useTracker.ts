@@ -3,6 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TrackerRow } from "@/lib/types";
 import { fetchTracker, saveTracker } from "@/lib/supabase";
 
+function errMsg(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
+  return String(e);
+}
+
 const blank = (): TrackerRow => ({
   id: crypto.randomUUID(), listing_url: "", person_name: "", price: null, location_url: "",
   visit_date: "", contact: "", notify_before: "", notes: "", crossed_off: false, sort_order: null,
@@ -20,7 +26,7 @@ export function useTracker() {
     let on = true;
     fetchTracker()
       .then((r) => on && setRows(r))
-      .catch((e) => on && setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => on && setError(errMsg(e)))
       .finally(() => on && setLoading(false));
     return () => { on = false; };
   }, []);
@@ -62,7 +68,7 @@ export function useTracker() {
       deleted.current.clear();
       setDirty(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errMsg(e));
     } finally {
       setSaving(false);
     }
