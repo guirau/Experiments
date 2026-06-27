@@ -71,11 +71,20 @@ export async function fetchTracker(): Promise<TrackerRow[]> {
   return out;
 }
 
-const emptyToNull = (r: TrackerRow): TrackerRow => {
-  const out: Record<string, unknown> = { ...r };
-  for (const k of Object.keys(out)) if (out[k] === "") out[k] = null;
-  return out as unknown as TrackerRow;
-};
+// Columns we write on upsert. Excludes DB-managed columns (created_at) so new rows fall
+// back to their defaults instead of being sent created_at: null in a mixed batch.
+const TRACKER_COLS = ["id", "listing_url", "person_name", "price", "location_url",
+  "visit_date", "contact", "notify_before", "notes", "crossed_off", "sort_order"] as const;
+
+function toPayload(r: TrackerRow): Record<string, unknown> {
+  const src = r as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of TRACKER_COLS) {
+    const v = src[k];
+    out[k] = v === "" ? null : v ?? null; // "" (empty input) and undefined -> null
+  }
+  return out;
+}
 
 // Bulk sync: delete removed rows, then upsert the current rows (keyed on id).
 export async function saveTracker(rows: TrackerRow[], deletedIds: string[]): Promise<void> {
@@ -85,7 +94,7 @@ export async function saveTracker(rows: TrackerRow[], deletedIds: string[]): Pro
     if (error) throw error;
   }
   if (rows.length) {
-    const { error } = await sb.from("tracker").upsert(rows.map(emptyToNull), { onConflict: "id" });
+    const { error } = await sb.from("tracker").upsert(rows.map(toPayload), { onConflict: "id" });
     if (error) throw error;
   }
 }
