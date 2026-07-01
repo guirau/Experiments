@@ -1,0 +1,28 @@
+[project]
+name = "kp-house-finder"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Alejandro Guirau",email = "alejandroguirau@gmail.com"}
+]
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "anthropic (>=0.107.0,<0.108.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "supabase (>=2.0,<3.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pandas (>=3.0.3,<4.0.0)",
+    "ipykernel (>=7.3.0,<8.0.0)",
+    "nbconvert (>=7.17.1,<8.0.0)"
+]

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "KP Rentals Exporter",
+  "version": "2.6.1",
+  "description": "Scrapes rental listing posts from Facebook groups and WhatsApp Web group chats and syncs them to Supabase (with JSON export as backup), for the Koh Phangan rental finder. Runs only when you click it, in your own session.",
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "downloads", "storage", "unlimitedStorage", "alarms"],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://web.facebook.com/*",
+    "https://m.facebook.com/*",
+    "https://web.whatsapp.com/*",
+    "https://*.supabase.co/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "KP Rentals Exporter",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}
