@@ -1,4 +1,34 @@
 {
+  // --- Interpreter (used by the Python extension: run/debug, IntelliSense) ---
+  // Points at the in-project Poetry venv. NOTE: honored only the FIRST time a
+  // workspace is opened with no interpreter cached. If it's not auto-selected, run:
+  //   Cmd+Shift+P -> "Python: Select Interpreter" -> ./.venv/bin/python
+  // (VS Code stores the real choice in per-workspace state, not in this file.)
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-  "python.terminal.activateEnvironment": true
+
+  // Ask the Python extension to activate the venv in new terminals. This is
+  // driven by the extension and ONLY fires once an interpreter is selected
+  // (see above), so we don't rely on it alone — see terminal.integrated.env below.
+  "python.terminal.activateEnvironment": true,
+
+  // --- Deterministic venv activation for EVERY integrated terminal ---
+  // Independent of the Python extension / interpreter selection: setting
+  // VIRTUAL_ENV and prepending .venv/bin to PATH is functionally what
+  // `source .venv/bin/activate` does, so `python`/`pip` resolve to the venv
+  // in any new terminal. (The cosmetic `(.venv)` prompt prefix may be absent;
+  // verify with `which python`.)
+  "terminal.integrated.env.osx": {
+    "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+  },
+
+  // --- Editor tooling ---
+  // The importable Python modules live in src/ (import db, import extract, ...).
+  // Tell Pylance so cross-module imports resolve without warnings.
+  "python.analysis.extraPaths": ["src"],
+
+  // Wire up the Test Explorer to pytest (config in pyproject.toml: pythonpath=["src"]).
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"]
 }
