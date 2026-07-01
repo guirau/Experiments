@@ -13,10 +13,10 @@ LLM-call minimization:
   - on parse failure / length mismatch we fall back to per-row calls for that
     batch only (correctness preserved, savings kept on the happy path).
 
-CSV path (legacy, still supported):
+CSV path (legacy, still supported; run from the project root):
   export ANTHROPIC_API_KEY=sk-ant-...
-  python extract.py                       # listings.csv -> parsed_listings.csv
-  python extract.py in.csv out.csv        # custom names
+  python src/extract.py                   # listings.csv -> parsed_listings.csv
+  python src/extract.py in.csv out.csv    # custom names
 """
 
 import os
@@ -380,7 +380,7 @@ def main():
     out_path = args[1] if len(args) >= 2 else "parsed_listings.csv"
 
     if not os.path.exists(in_path):
-        sys.exit(f"Input not found: {in_path} (run combine.py first).")
+        sys.exit(f"Input not found: {in_path} (run src/combine.py first).")
 
     with open(in_path, encoding="utf-8") as f:
         in_rows = list(csv.DictReader(f))

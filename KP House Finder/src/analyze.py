@@ -4,10 +4,10 @@
 Incremental + idempotent: only fb_posts ids not already in listings_parsed are
 processed, and each is sent to the LLM at most once (in batches of BATCH_SIZE).
 
-Usage:
-  python analyze.py --inspect        # row counts + samples + schema check, no writes
-  python analyze.py                  # parse all un-parsed fb_posts
-  python analyze.py --limit 5        # parse at most 5 new rows (cost-gated trial)
+Usage (run from the project root):
+  python src/analyze.py --inspect    # row counts + samples + schema check, no writes
+  python src/analyze.py              # parse all un-parsed fb_posts
+  python src/analyze.py --limit 5    # parse at most 5 new rows (cost-gated trial)
 """
 
 import os

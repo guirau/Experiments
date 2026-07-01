@@ -18,10 +18,10 @@ Dedup is two-layer:
   2. Against the existing master CSV, so running daily with overlapping
      JSONs never inserts a listing already present.
 
-Usage:
-  python combine.py ./listings              # combine all JSONs in ./listings -> listings.csv
-  python combine.py mine.csv ./listings     # -> mine.csv
-  python combine.py a.json b.json           # -> listings.csv
+Usage (run from the project root):
+  python src/combine.py ./listings          # combine all JSONs in ./listings -> listings.csv
+  python src/combine.py mine.csv ./listings # -> mine.csv
+  python src/combine.py a.json b.json       # -> listings.csv
   (Any arg ending in .csv is the output file; everything else is input.)
 """
 
@@ -131,14 +131,14 @@ def main():
     args = sys.argv[1:]
     if not args:
         sys.exit(
-            "Usage: python combine.py [output.csv] <input.json | folder/> ...\n"
+            "Usage: python src/combine.py [output.csv] <input.json | folder/> ...\n"
             "  - Any argument ending in .csv is the master CSV (optional;\n"
             "    defaults to listings.csv).\n"
             "  - Everything else is input: json files and/or folders.\n"
             "Examples:\n"
-            "  python combine.py ./listings            # -> listings.csv\n"
-            "  python combine.py mine.csv ./listings   # -> mine.csv\n"
-            "  python combine.py a.json b.json         # -> listings.csv"
+            "  python src/combine.py ./listings            # -> listings.csv\n"
+            "  python src/combine.py mine.csv ./listings   # -> mine.csv\n"
+            "  python src/combine.py a.json b.json         # -> listings.csv"
         )
 
     # split: the .csv arg (if any) is the output; the rest are inputs

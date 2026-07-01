@@ -16,7 +16,7 @@ dependencies = [
 package-mode = false
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
 testpaths = ["tests"]
 
 [dependency-groups]
