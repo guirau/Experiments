@@ -5,6 +5,7 @@ import { useFilters } from "@/hooks/useFilters";
 import { useCollections } from "@/hooks/useCollections";
 import { useTracker } from "@/hooks/useTracker";
 import { TrackerTable } from "@/components/tracker/TrackerTable";
+import { ProspectingPanel } from "@/components/prospecting/ProspectingPanel";
 import type { Listing } from "@/lib/types";
 import { applyFilters, sortListings, countByArea } from "@/lib/filters";
 import { updatePrice, updateListing } from "@/lib/supabase";
@@ -17,7 +18,7 @@ import { ActiveChips } from "./ActiveChips";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-type View = "list" | "map" | "saved" | "contacted" | "removed" | "tracker";
+type View = "list" | "map" | "saved" | "contacted" | "removed" | "tracker" | "prospecting";
 
 export function Dashboard() {
   const { listings, loading, error, updateLocal } = useListings();
@@ -86,8 +87,11 @@ export function Dashboard() {
     return () => document.removeEventListener("keydown", onKey);
   }, [undoRemove]);
 
+  // Tracker + Prospecting take the full width and hide the listings filter sidebar.
+  const fullWidth = view === "tracker" || view === "prospecting";
+
   return (
-    <div className={`mx-auto px-4 py-6 ${view === "tracker" ? "max-w-none" : "max-w-7xl"}`}>
+    <div className={`mx-auto px-4 py-6 ${fullWidth ? "max-w-none" : "max-w-7xl"}`}>
       <header className="sticky top-0 z-10 -mx-4 mb-4 flex items-center justify-between border-b px-4 py-3 backdrop-blur" style={{ borderColor: "var(--line)", background: "color-mix(in oklch, var(--bg) 80%, transparent)" }}>
         <h1 className="text-lg font-bold tracking-tight">KP House Finder</h1>
         <button className="rounded-full border px-3 py-1 text-sm lg:hidden" style={{ borderColor: "var(--line)" }} onClick={() => setDrawer(true)}>Filters</button>
@@ -95,8 +99,8 @@ export function Dashboard() {
 
       {error && <div className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--warn)" }}>Couldn&apos;t load listings: {error}</div>}
 
-      <div className={view === "tracker" ? "" : "grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]"}>
-        {view !== "tracker" && <div className="hidden lg:block"><div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain pr-1"><FilterSidebar filters={filters} setFilters={setFilters} onClear={reset} /></div></div>}
+      <div className={fullWidth ? "" : "grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]"}>
+        {!fullWidth && <div className="hidden lg:block"><div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain pr-1"><FilterSidebar filters={filters} setFilters={setFilters} onClear={reset} /></div></div>}
 
         <main>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -120,10 +124,15 @@ export function Dashboard() {
                 style={view === "tracker" ? { background: "var(--accent)", color: "var(--accent-ink)", borderColor: "var(--accent)" } : { borderColor: "var(--line)", background: "var(--surface)" }}>
                 🗂 Tracker ({tracker.rows.length})
               </button>
+              <button role="tab" aria-selected={view === "prospecting"} onClick={() => setView("prospecting")}
+                className="rounded-lg border px-3 py-1 text-sm font-medium"
+                style={view === "prospecting" ? { background: "var(--accent)", color: "var(--accent-ink)", borderColor: "var(--accent)" } : { borderColor: "var(--line)", background: "var(--surface)" }}>
+                🔍 Prospecting
+              </button>
             </div>
             {view === "list"
               ? <SortBar count={visible.length} sort={filters.sort} onSort={(s) => setFilters({ ...filters, sort: s })} />
-              : view === "tracker" ? null
+              : view === "tracker" || view === "prospecting" ? null
               : <span className="text-sm" style={{ color: "var(--muted)" }}>
                   {(view === "saved" ? savedList.length : view === "contacted" ? contactedList.length : view === "removed" ? removedList.length : visible.length).toLocaleString()} listings
                 </span>}
@@ -131,7 +140,9 @@ export function Dashboard() {
 
           {(view === "list" || view === "map") && <div className="mt-3"><ActiveChips filters={filters} setFilters={setFilters} /></div>}
 
-          {view === "tracker" ? (
+          {view === "prospecting" ? (
+            <ProspectingPanel tracker={tracker} />
+          ) : view === "tracker" ? (
             <TrackerTable tracker={tracker} />
           ) : view === "map" ? (
             <AreaMap counts={areaCounts} selected={filters.areas} onToggle={toggleArea} />
