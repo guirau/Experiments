@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Listing, TrackerRow } from "./types";
+import type { Listing, Prospect, TrackerRow } from "./types";
 import { mergeLinks, type PostLink } from "./merge";
 
 const PAGE = 1000;
@@ -97,4 +97,62 @@ export async function saveTracker(rows: TrackerRow[], deletedIds: string[]): Pro
     const { error } = await sb.from("tracker").upsert(rows.map(toPayload), { onConflict: "id" });
     if (error) throw error;
   }
+}
+
+// ---- Prospects (Google Maps discovery / SerpApi enrichment) ----
+export async function fetchProspects(): Promise<Prospect[]> {
+  const sb = client();
+  return pageAll<Prospect>(async (from, to) => {
+    // best findings first; place_id tiebreaker keeps .range() pagination a total order.
+    const { data, error } = await sb.from("prospects").select("*")
+      .order("suitability_score", { ascending: false, nullsFirst: false })
+      .order("place_id", { ascending: true }).range(from, to);
+    if (error) throw error;
+    return (data ?? []) as Prospect[];
+  });
+}
+
+// Mark the places the user selected on the map as queued. src/enrich.py then enriches
+// EXACTLY these (it only ever reads enrich_status = 'queued'), never anything else.
+export async function queueForEnrichment(placeIds: string[]): Promise<void> {
+  if (!placeIds.length) return;
+  const sb = client();
+  const { error } = await sb.from("prospects").update({ enrich_status: "queued" }).in("place_id", placeIds);
+  if (error) throw error;
+}
+
+// place_ids that already have a tracker row (so cards can show "Tracked").
+export async function fetchTrackedProspectIds(): Promise<Set<string>> {
+  const sb = client();
+  const { data, error } = await sb.from("tracker").select("prospect_id").not("prospect_id", "is", null);
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => (r as { prospect_id: string }).prospect_id));
+}
+
+function mapsLink(p: Prospect): string {
+  const q = encodeURIComponent(p.name ?? p.formatted_address ?? "");
+  return `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${p.place_id}`;
+}
+
+// Create a tracker row from a prospect card. Price is left blank on purpose — the tracker
+// price is the LONG-TERM monthly rate you negotiate, not the nightly SerpApi figure (which
+// goes into notes as a reference). Links back via prospect_id.
+export async function createTrackerFromProspect(p: Prospect): Promise<void> {
+  const sb = client();
+  const ref = [
+    p.google_rating != null ? `Google ${p.google_rating}★` : null,
+    p.rate_per_night_thb != null ? `nightly ~฿${p.rate_per_night_thb.toLocaleString()}` : null,
+  ].filter(Boolean).join(" · ");
+  const { error } = await sb.from("tracker").insert({
+    id: crypto.randomUUID(),
+    listing_url: p.website ?? null,
+    person_name: p.name ?? null,
+    price: null,
+    location_url: mapsLink(p),
+    contact: p.phone ?? p.website ?? null,
+    notes: ref ? `From Prospecting — ${ref}` : "From Prospecting",
+    crossed_off: false,
+    prospect_id: p.place_id,
+  });
+  if (error) throw error;
 }

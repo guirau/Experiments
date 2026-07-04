@@ -77,6 +77,39 @@ export interface TrackerRow {
   sort_order: number | null;
 }
 
+// One OTA price offer (Booking/Agoda/Airbnb…) stored in prospects.ota_offers (jsonb).
+export interface OtaOffer {
+  source: string | null;
+  price: number | null;
+  link: string | null;
+}
+
+// A Koh Phangan accommodation business discovered on Google Maps (prospects table).
+// Populated by src/discover.py; price fields filled by src/enrich.py after the user
+// queues it from the map.
+export interface Prospect {
+  place_id: string;
+  name: string | null;
+  formatted_address: string | null;
+  lat: number | null;
+  lng: number | null;
+  phone: string | null;
+  website: string | null;
+  google_rating: number | null;
+  user_ratings_total: number | null;
+  property_type: string | null;
+  source: string | null;
+  suitability_score: number | null;
+  suitability_reason: string | null;
+  enrich_status: string | null; // discovered | queued | enriched | error
+  rate_per_night_thb: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  ota_offers: OtaOffer[] | null;
+  created_at: string | null;
+  enriched_at: string | null;
+}
+
 export interface FilterState {
   listingType: string[]; // "rent" | "sale"; empty = both
   parsedWithin: string;  // "" = any; else number of days ("1"|"3"|"7"|"30")
