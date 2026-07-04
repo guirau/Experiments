@@ -15,6 +15,7 @@ create table if not exists tracker (
   notes         text,
   crossed_off   boolean default false,  -- soft cross-off (kept in DB, just faded in the UI)
   sort_order    integer,                -- manual row order (drag-and-drop)
+  prospect_id   text,           -- links a row created from a Prospecting card (prospects.place_id)
   created_at    timestamptz not null default now()
 );
 
@@ -22,6 +23,7 @@ create table if not exists tracker (
 alter table tracker add column if not exists price integer;
 alter table tracker add column if not exists crossed_off boolean default false;
 alter table tracker add column if not exists sort_order integer;
+alter table tracker add column if not exists prospect_id text;
 
 -- STEP 2
 alter table tracker enable row level security;
