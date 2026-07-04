@@ -9,6 +9,44 @@ dashboard with filters, a map, and a personal "listings I'm pursuing" tracker.
 
 ---
 
+## ▶ Resume here — current state & next steps (updated 2026-07-04)
+
+The **Prospecting** feature (Google Maps discovery → Claude fit-scoring → map-select → SerpApi
+pricing → tracker) and its **UI trigger service** (FastAPI, buttons in the Prospecting tab) are
+**code-complete and statically verified** — `poetry run pytest` is green (30 tests, incl. the
+enrich cost-guard), and web `tsc`/`eslint`/`next build` are clean. The Prospecting tab, its 3
+subtabs, the control-bar buttons, and the proxy→job→poll→status chain were smoke-tested in the
+browser. **What has NOT happened yet: the scripts have never run against live Google Places /
+SerpApi / Claude**, because the DB migration + paid API keys aren't in place.
+
+**Next steps to make Prospecting actually work (in order):**
+
+1. **Apply the schema** in the Supabase SQL editor: run `sql/prospects.sql` (whole file) and the
+   `prospect_id` alter in `sql/tracker.sql`. *(Until this, the Prospecting tab shows
+   "column tracker.prospect_id does not exist" / a `prospects` 404 — expected.)*
+2. **Add two keys to `.env`** (repo root): `GOOGLE_MAPS_API_KEY` (Google Maps Platform, Places
+   API (New) enabled + billing on) and `SERPAPI_KEY` (serpapi.com). See `.env.example`.
+   Confirm `web/.env.local` still has the `NEXT_PUBLIC_SUPABASE_*` vars.
+3. **First live discovery run:** `poetry run python src/discover.py --inspect`, then
+   `poetry run python src/discover.py --limit 5`. ⚠️ This is the first time the Google Places +
+   Claude field mappings (`build_prospect_row`, the scoring prompt) hit **real payloads** — they
+   were written from docs, so sanity-check the rows in Supabase and tweak mappings if a field is
+   off. Debug in isolation with `--inspect`.
+4. **Run the app + trigger service** (two terminals — see "5. Prospecting" below for commands) and
+   open the **Prospecting** tab. Confirm the map renders real pins (Leaflet's tile render is the
+   one UI path not yet exercised — it's hidden until prospects exist).
+5. **First live enrichment run:** select a few pins on the map → **Queue** → click **Enrich
+   queued (N)** (or `poetry run python src/enrich.py --inspect` then without `--inspect`). ⚠️
+   First time `map_hotel_result` sees a real SerpApi payload — verify prices/offers populate
+   correctly. The guard means only queued places are ever charged.
+6. **Then:** the happy path (prices on cards, "Add to tracker" creating a linked row) should work
+   end to end.
+
+**Git state:** as of this note, all Prospecting + trigger-service work is **uncommitted** on the
+`dev` branch (see `git status`). Design docs live in `docs/superpowers/{specs,plans}/2026-07-03-*`.
+
+---
+
 ## How it works (data flow)
 
 ```
@@ -184,6 +222,39 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
 The dashboard reads `listings_parsed` (filterable cards + area map) and `tracker`
 (a drag-to-reorder table of listings you're actively pursuing, edited in-app).
 See `web/README.md` for build/deploy details (`npm run build`, Vercel).
+
+### 5. Prospecting (Google Maps discovery + trigger service)
+
+A proactive channel: discover Koh Phangan accommodation businesses on Google Maps,
+score their solo-long-stay fit with Claude, select places on a real map to price via
+SerpApi, and cold-pitch owners. One-time setup:
+
+```bash
+# a) apply the schema in the Supabase SQL editor: sql/prospects.sql + the tracker alter
+# b) add two keys to .env (repo root):
+GOOGLE_MAPS_API_KEY=<google-maps-platform-key, Places API (New) enabled + billing>
+SERPAPI_KEY=<serpapi.com key>
+```
+
+Run the scripts directly (from the project root), or trigger them from the UI:
+
+```bash
+poetry run python src/discover.py --inspect   # prospect counts, NO writes
+poetry run python src/discover.py --limit 5   # discover + score a few places (cheap trial)
+poetry run python src/enrich.py --inspect     # list ONLY queued places + est. SerpApi cost
+poetry run python src/enrich.py               # price the queued places (guarded to 'queued' only)
+```
+
+To drive them from the **Prospecting** tab's buttons, run the trigger service alongside
+the web app (own terminal, from the project root):
+
+```bash
+poetry run uvicorn api:app --app-dir src --host 127.0.0.1 --port 8000
+```
+
+`src/api.py` imports and calls the same functions the CLIs use (so the cost guard is
+identical); the web app proxies `/api/py/*` to it (see `web/next.config.ts`). `enrich.py`
+only ever prices prospects with `enrich_status='queued'` — the places you select on the map.
 
 ---
 
